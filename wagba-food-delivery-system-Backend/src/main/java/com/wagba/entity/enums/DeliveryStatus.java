@@ -1,4 +1,4 @@
-package com.wagba.fooddelivery.entity.enums;
+package com.wagba.entity.enums;
 
 public enum DeliveryStatus {
 

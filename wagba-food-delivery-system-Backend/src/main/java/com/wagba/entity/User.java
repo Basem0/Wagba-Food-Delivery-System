@@ -1,5 +1,6 @@
 package com.wagba.entity;
 
+import com.wagba.entity.enums.OnboardingStatus;
 import com.wagba.entity.enums.UserRole;
 import com.wagba.entity.enums.UserStatus;
 
@@ -25,12 +26,23 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private UserRole role;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserStatus status = UserStatus.ACTIVE;
+    private UserStatus status;
+
+    @Column(nullable = false)
+    private boolean emailVerified;
+    
+    @Column(unique = true)
+    private String verificationToken;
+
+    private LocalDateTime verificationTokenExpiry;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OnboardingStatus onboardingStatus;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -98,7 +110,39 @@ public class User {
         this.status = status;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public boolean isEmailVerified() {
+		return emailVerified;
+	}
+
+	public void setEmailVerified(boolean emailVerified) {
+		this.emailVerified = emailVerified;
+	}
+
+	public String getVerificationToken() {
+		return verificationToken;
+	}
+
+	public void setVerificationToken(String verificationToken) {
+		this.verificationToken = verificationToken;
+	}
+
+	public LocalDateTime getVerificationTokenExpiry() {
+		return verificationTokenExpiry;
+	}
+
+	public void setVerificationTokenExpiry(LocalDateTime verificationTokenExpiry) {
+		this.verificationTokenExpiry = verificationTokenExpiry;
+	}
+
+	public OnboardingStatus getOnboardingStatus() {
+		return onboardingStatus;
+	}
+
+	public void setOnboardingStatus(OnboardingStatus onboardingStatus) {
+		this.onboardingStatus = onboardingStatus;
+	}
+
+	public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 

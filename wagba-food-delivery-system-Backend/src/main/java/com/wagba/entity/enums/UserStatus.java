@@ -1,7 +1,9 @@
 package com.wagba.entity.enums;
 
 public enum UserStatus {
-
+	
+	PENDING,
     ACTIVE,
-    INACTIVE
+    REJECTED,
+    INACTIVE,
 }
