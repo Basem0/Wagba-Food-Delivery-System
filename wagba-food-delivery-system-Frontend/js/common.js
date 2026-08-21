@@ -2,7 +2,7 @@
 //  Wagba frontend - common helpers (no build step, plain JS)
 // ============================================================
 
-const DEFAULT_API = 'http://localhost:8081/api/v1';
+const DEFAULT_API = 'http://localhost:8082/api/v1';
 
 function getApiBase() { return localStorage.getItem('wagba_api') || DEFAULT_API; }
 function setApiBase(v) { localStorage.setItem('wagba_api', (v || '').trim()); }
@@ -138,6 +138,20 @@ function doLogout() {
   });
 }
 
+// ---------- sidebar navigation (role dashboards) ----------
+function navTo(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.add('d-none'));
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.remove('d-none');
+  document.querySelectorAll('.side-link').forEach(l => l.classList.toggle('active', l.dataset.view === view));
+  const t = window.VIEWS && window.VIEWS[view];
+  if (t) {
+    const pt = document.getElementById('pageTitle'); if (pt) pt.textContent = t.title || '';
+    const ps = document.getElementById('pageSub'); if (ps) ps.textContent = t.sub || '';
+  }
+  if (window.onNav) { try { window.onNav(view); } catch (e) {} }
+}
+
 // ---------- toast ----------
 function toast(title, msg, type = '') {
   let wrap = document.querySelector('.toast-wrap');
@@ -177,4 +191,27 @@ function statusBadge(status) {
   };
   const cls = map[status] || 'light';
   return `<span class="badge bg-${cls}">${escapeHtml(status)}</span>`;
+}
+function stars(n) {
+  n = parseInt(n) || 0;
+  let s = '';
+  for (let i = 1; i <= 5; i++) s += i <= n ? '★' : '☆';
+  return s;
+}
+function onImgError(el, label) {
+  el.onerror = null;
+  el.style.display = 'none';
+  const p = el.parentElement;
+  if (p && !p.querySelector('.img-fallback')) {
+    const d = document.createElement('div');
+    d.className = 'img-fallback';
+    d.innerHTML = '<i class="bi bi-image"></i>' + (label ? '<span>' + escapeHtml(label) + '</span>' : '');
+    p.insertBefore(d, el);
+  }
+}
+function fmtDateTime(s) {
+  if (!s) return '-';
+  const d = new Date(s);
+  if (isNaN(d)) return escapeHtml(s);
+  return d.toLocaleString();
 }

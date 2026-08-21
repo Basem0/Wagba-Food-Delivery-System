@@ -98,7 +98,7 @@ public class AdminController {
             m.put("id", u.getId());
             m.put("name", u.getName());
             m.put("email", u.getEmail());
-            m.put("role", u.getRole().name());
+            m.put("role", u.getRole() != null ? u.getRole().name() : "NONE");
             m.put("status", u.getStatus().name());
             return m;
         }).collect(Collectors.toList());

@@ -3,177 +3,266 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wagba — Welcome</title>
+  <title>Wagba — Food Delivery, reinvented</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="css/styles.css" rel="stylesheet">
 </head>
-<body class="bg-orbs">
-  <div class="auth-wrap">
-    <!-- ASIDE -->
-    <aside class="auth-aside">
-      <div class="logo-mark anim-float" style="position:absolute; top:2rem; left:2rem;"><i class="bi bi-egg-fried"></i></div>
-      <div>
-        <div class="big">Hungry?<br>We've got you.</div>
-        <p class="sub">Order from the best local restaurants with Wagba — fast delivery, live tracking, and tasty deals delivered to your door.</p>
-        <div class="feature-row">
-          <div class="f"><i class="bi bi-lightning-charge-fill"></i> Lightning delivery</div>
-          <div class="f"><i class="bi bi-star-fill"></i> Top rated spots</div>
-          <div class="f"><i class="bi bi-ticket-percent"></i> Daily coupons</div>
-        </div>
+<body>
+
+<!-- Landing nav -->
+<nav class="landing-nav">
+  <a class="brand" href="index.html"><span class="logo"><i class="bi bi-egg-fried"></i></span> Wagba</a>
+  <div class="links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#roles">Who is it for</a>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn-ghost" onclick="openAuth('login')"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+  <button class="btn-brand" onclick="openAuth('register')"><i class="bi bi-rocket-takeoff"></i> Get Started</button>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="hero-grid">
+    <div>
+      <span class="badge-soft"><i class="bi bi-stars"></i> Hot meals, delivered fast</span>
+      <h1 class="mt-3">Your favourite food, <span class="gradient-text">one tap away</span></h1>
+      <p class="lead">Discover the best local restaurants, order in seconds, and track your driver live on the map. Wagba connects hungry customers with great kitchens and reliable couriers.</p>
+      <div class="hero-search">
+        <i class="bi bi-geo-alt" style="align-self:center;color:var(--muted)"></i>
+        <input id="heroSearch" class="form-control" placeholder="Enter your delivery address…">
+        <button class="btn-brand" onclick="openAuth('register')">Find Food</button>
       </div>
-      <div class="muted mt-4" style="opacity:.8; font-size:.85rem;">🍔🍕🌮🥗🍜🍰 your cravings, one tap away.</div>
-    </aside>
+      <div class="mt-3 d-flex gap-3 small muted">
+        <span><i class="bi bi-shield-check text-success"></i> Secure payments</span>
+        <span><i class="bi bi-speedometer2 text-success"></i> Live tracking</span>
+        <span><i class="bi bi-emoji-smile text-success"></i> 1000+ dishes</span>
+      </div>
+    </div>
+    <div class="hero-art">
+      <i class="bi bi-egg-fried"></i>
+    </div>
+  </div>
+</header>
 
-    <!-- FORM -->
-    <main class="auth-form-side">
-      <div class="auth-card anim-fade-up">
-        <div class="d-flex align-items-center gap-2 mb-3">
-          <span class="logo-mark" style="width:42px;height:42px;font-size:1.3rem;"><i class="bi bi-egg-fried"></i></span>
-          <h3 class="m-0">Welcome to Wagba</h3>
+<!-- Features -->
+<section class="section" id="features">
+  <h2>Built for everyone at the table</h2>
+  <p class="lead-c">A complete platform — from the first craving to the last bite.</p>
+  <div class="feat-grid">
+    <div class="feat">
+      <div class="ic"><i class="bi bi-shop"></i></div>
+      <h4>Discover restaurants</h4>
+      <p>Browse rich menus with photos, ratings and delivery times. Filter by cuisine, price and what's open now.</p>
+    </div>
+    <div class="feat">
+      <div class="ic"><i class="bi bi-lightning-charge"></i></div>
+      <h4>Order in seconds</h4>
+      <p>Add items to your cart, apply coupons and checkout with a smooth, secure flow.</p>
+    </div>
+    <div class="feat">
+      <div class="ic"><i class="bi bi-geo-alt"></i></div>
+      <h4>Track live</h4>
+      <p>Watch your driver move on the map in real time and know exactly when to open the door.</p>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="section" id="how" style="background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <h2>How Wagba works</h2>
+  <p class="lead-c">Three simple steps to a full stomach.</p>
+  <div class="steps">
+    <div class="step-card">
+      <div class="num">1</div>
+      <h5>Pick your food</h5>
+      <p>Choose a restaurant, build your cart and apply any coupon you have.</p>
+    </div>
+    <div class="step-card">
+      <div class="num">2</div>
+      <h5>Pay & confirm</h5>
+      <p>Checkout with your address. The kitchen gets the order instantly.</p>
+    </div>
+    <div class="step-card">
+      <div class="num">3</div>
+      <h5>Receive & enjoy</h5>
+      <p>A driver picks it up, shares live location, and delivers to your door.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Roles -->
+<section class="section" id="roles">
+  <h2>One platform, four roles</h2>
+  <p class="lead-c">Whatever your seat at the table, Wagba has a dashboard for you.</p>
+  <div class="feat-grid">
+    <div class="feat">
+      <div class="ic"><i class="bi bi-person"></i></div>
+      <h4>Customer</h4>
+      <p>Browse, order, pay, review and track every delivery live.</p>
+    </div>
+    <div class="feat">
+      <div class="ic"><i class="bi bi-shop-window"></i></div>
+      <h4>Restaurant Owner</h4>
+      <p>Manage your menu, accept orders and update their status in real time.</p>
+    </div>
+    <div class="feat">
+      <div class="ic"><i class="bi bi-bicycle"></i></div>
+      <h4>Driver</h4>
+      <p>Pick up available deliveries, share your location and earn.</p>
+    </div>
+    <div class="feat">
+      <div class="ic"><i class="bi bi-sliders"></i></div>
+      <h4>Admin</h4>
+      <p>Approve restaurants & drivers, manage users and launch coupons.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="cta">
+    <h2>Ready to order your first meal?</h2>
+    <p>Create a free account and explore the kitchens near you.</p>
+    <button class="btn-brand" style="background:#fff;color:var(--brand-dark)" onclick="openAuth('register')"><i class="bi bi-rocket-takeoff"></i> Get Started Free</button>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="grid">
+    <div>
+      <div class="d-flex align-center gap-2 mb-2"><span class="logo" style="width:34px;height:34px;font-size:1rem"><i class="bi bi-egg-fried"></i></span> <b style="font-family:var(--display);font-size:1.1rem">Wagba</b></div>
+      <p class="small">Food delivery, reinvented. Bringing local kitchens and hungry people together — fast, fresh and tracked.</p>
+    </div>
+    <div><h6>Product</h6><a href="#features">Features</a><a href="#how">How it works</a><a href="#roles">Roles</a></div>
+    <div><h6>Company</h6><a href="#">About</a><a href="#">Careers</a><a href="#">Contact</a></div>
+    <div><h6>Legal</h6><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></div>
+  </div>
+  <hr style="border-color:var(--line);margin:24px 0 12px">
+  <p class="small text-center">© 2026 Wagba. Demo project.</p>
+</footer>
+
+<!-- Auth Modal -->
+<div class="modal fade" id="authModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-4">
+        <div class="d-flex justify-between align-center mb-3">
+          <h4 class="modal-title" id="authTitle">Welcome back</h4>
+          <button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
         </div>
 
-        <ul class="nav nav-pills mb-3 gap-2" id="authTabs">
-          <li class="nav-item flex-fill"><a class="nav-link active text-center" href="#" data-step="login">Login</a></li>
-          <li class="nav-item flex-fill"><a class="nav-link text-center" href="#" data-step="register">Register</a></li>
-        </ul>
+        <div class="auth-tabs mb-3">
+          <button id="tabLogin" class="active" onclick="setAuthTab('login')">Login</button>
+          <button id="tabRegister" onclick="setAuthTab('register')">Register</button>
+        </div>
 
         <div id="alertBox"></div>
 
-        <form id="loginForm" onsubmit="return doLogin(event)">
-          <div class="mb-3">
-            <label class="form-label">Email</label>
-            <div class="input-group">
-              <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-envelope text-muted"></i></span>
-              <input type="email" class="form-control border-start-0" id="loginEmail" placeholder="you@example.com" required>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Password</label>
-            <div class="input-group">
-              <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-lock text-muted"></i></span>
-              <input type="password" class="form-control border-start-0" id="loginPassword" placeholder="••••••••" required>
-            </div>
-          </div>
-          <button class="btn btn-brand w-100 btn-lg"><i class="bi bi-box-arrow-in-right"></i> Login</button>
-        </form>
-
-        <form id="registerForm" class="d-none" onsubmit="return doRegister(event)">
-          <div class="mb-3">
-            <label class="form-label">Full Name</label>
-            <input type="text" class="form-control" id="regName" placeholder="John Doe" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-control" id="regEmail" placeholder="you@example.com" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" class="form-control" id="regPassword" placeholder="min 6 characters" minlength="6" required>
-          </div>
-          <button class="btn btn-brand w-100 btn-lg"><i class="bi bi-person-plus"></i> Create Account</button>
-        </form>
-
-        <div id="verifyBox" class="d-none">
-          <div class="empty-state">
-            <div class="ico"><i class="bi bi-envelope-check"></i></div>
-            <p class="muted small">We sent a verification link/token. Paste the token below to continue.</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Verification token</label>
-            <input type="text" class="form-control text-center" id="verifyToken">
-          </div>
-          <button class="btn btn-brand w-100" onclick="doVerify()">Verify Email</button>
+        <!-- Login -->
+        <div id="loginView">
+          <div class="mb-2"><label class="form-label">Email</label><input id="lEmail" class="form-control" placeholder="you@example.com"></div>
+          <div class="mb-3"><label class="form-label">Password</label><input id="lPass" type="password" class="form-control" placeholder="••••••••"></div>
+          <button class="btn-brand w-100" onclick="doLogin()">Login</button>
+          <div class="mt-2 text-center small"><a href="#" onclick="setAuthTab('forgot');return false;">Forgot password?</a></div>
         </div>
 
-        <div id="roleBox" class="d-none">
-          <h5 class="text-center mb-3">Choose your role</h5>
-          <div class="d-grid gap-2">
-            <button class="btn btn-outline-brand" onclick="doSelectRole('CUSTOMER')"><i class="bi bi-bag-heart"></i> Customer</button>
-            <button class="btn btn-outline-brand" onclick="doSelectRole('RESTAURANT_OWNER')"><i class="bi bi-shop"></i> Restaurant Owner</button>
-            <button class="btn btn-outline-brand" onclick="doSelectRole('DRIVER')"><i class="bi bi-bicycle"></i> Driver</button>
-          </div>
+        <!-- Register -->
+        <div id="registerView" class="d-none">
+          <div class="mb-2"><label class="form-label">Full name</label><input id="rName" class="form-control" placeholder="Ahmed"></div>
+          <div class="mb-2"><label class="form-label">Email</label><input id="rEmail" class="form-control" placeholder="you@example.com"></div>
+          <div class="mb-2"><label class="form-label">Password</label><input id="rPass" type="password" class="form-control" placeholder="At least 8 characters"></div>
+          <div class="mb-3"><label class="form-label">I want to</label>
+            <select id="rRole" class="form-select">
+              <option value="CUSTOMER">Order food (Customer)</option>
+              <option value="RESTAURANT_OWNER">Open a restaurant</option>
+              <option value="DRIVER">Deliver with Wagba</option>
+            </select></div>
+          <button class="btn-brand w-100" onclick="doRegister()">Create account</button>
         </div>
 
-        <div class="divider"></div>
-        <p class="text-center muted small mb-0">
-          <i class="bi bi-hdd-network"></i> API:
-          <input id="apiInput" class="form-control form-control-sm d-inline" style="width:240px" value="">
-        </p>
+        <!-- Verify -->
+        <div id="verifyView" class="d-none">
+          <p class="text-muted small">We sent a verification code to your email. Paste it below to activate your account.</p>
+          <div class="mb-2"><label class="form-label">Verification code</label><input id="vToken" class="form-control" placeholder="code from email / DB"></div>
+          <button class="btn-brand w-100" onclick="doVerify()">Verify email</button>
+        </div>
+
+        <!-- Forgot -->
+        <div id="forgotView" class="d-none">
+          <div class="mb-2"><label class="form-label">Email</label><input id="fEmail" class="form-control" placeholder="you@example.com"></div>
+          <button class="btn-brand w-100" onclick="doForgot()">Send reset link</button>
+          <div id="resetBox" class="mt-3 d-none">
+            <div class="mb-2"><label class="form-label">Reset code</label><input id="fToken" class="form-control" placeholder="code"></div>
+            <div class="mb-2"><label class="form-label">New password</label><input id="fNew" type="password" class="form-control"></div>
+            <button class="btn-brand w-100" onclick="doReset()">Reset password</button>
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   </div>
+</div>
 
-  <script src="js/common.js"></script>
-  <script>
-    document.getElementById('apiInput').value = getApiBase();
-    document.getElementById('apiInput').addEventListener('change', e => setApiBase(e.target.value));
-
-    document.querySelectorAll('#authTabs .nav-link').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        document.querySelectorAll('#authTabs .nav-link').forEach(x => x.classList.remove('active'));
-        a.classList.add('active');
-        const step = a.dataset.step;
-        document.getElementById('loginForm').classList.toggle('d-none', step !== 'login');
-        document.getElementById('registerForm').classList.toggle('d-none', step !== 'register');
-        clearAlert('alertBox');
-      });
-    });
-    // style active pill
-    const style = document.createElement('style');
-    style.textContent = '.nav-pills .nav-link.active{background:var(--gradient);color:#fff;box-shadow:var(--shadow-lift);} .nav-pills .nav-link{color:var(--muted);font-weight:600;}';
-    document.head.appendChild(style);
-
-    async function doLogin(e) {
-      e.preventDefault(); clearAlert('alertBox');
-      try {
-        const token = await api('/auth/login', 'POST', {
-          email: document.getElementById('loginEmail').value,
-          password: document.getElementById('loginPassword').value
-        }, false);
-        await afterAuth(token, true);
-      } catch (err) { showAlert('alertBox','danger', err.message); }
-    }
-
-    async function doRegister(e) {
-      e.preventDefault(); clearAlert('alertBox');
-      const email = document.getElementById('regEmail').value;
-      const password = document.getElementById('regPassword').value;
-      try {
-        await api('/auth/register', 'POST', {
-          name: document.getElementById('regName').value, email, password
-        }, false);
-        sessionStorage.setItem('wagba_reg_email', email);
-        sessionStorage.setItem('wagba_reg_password', password);
-        document.getElementById('registerForm').classList.add('d-none');
-        document.getElementById('verifyBox').classList.remove('d-none');
-        showAlert('alertBox','success','Registered! Check your email (or server logs) for the token.');
-      } catch (err) { showAlert('alertBox','danger', err.message); }
-    }
-
-    async function doVerify() {
-      clearAlert('alertBox');
-      try {
-        await api('/auth/verify-email?token=' + encodeURIComponent(document.getElementById('verifyToken').value), 'GET', null, false);
-        document.getElementById('verifyBox').classList.add('d-none');
-        document.getElementById('roleBox').classList.remove('d-none');
-        showAlert('alertBox','success','Email verified!');
-      } catch (err) { showAlert('alertBox','danger', err.message); }
-    }
-
-    async function doSelectRole(role) {
-      clearAlert('alertBox');
-      const email = sessionStorage.getItem('wagba_reg_email');
-      const password = sessionStorage.getItem('wagba_reg_password');
-      try {
-        await api('/auth/select-role?email=' + encodeURIComponent(email) + '&role=' + role, 'POST', null, false);
-        const token = await api('/auth/login', 'POST', { email, password }, false);
-        sessionStorage.removeItem('wagba_reg_email');
-        sessionStorage.removeItem('wagba_reg_password');
-        await afterAuth(token, true);
-      } catch (err) { showAlert('alertBox','danger', err.message); }
-    }
-  </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/common.js"></script>
+<script>
+  let _pendingEmail = '';
+  function openAuth(tab) { setAuthTab(tab || 'login'); new bootstrap.Modal(document.getElementById('authModal')).show(); }
+  function setAuthTab(tab) {
+    ['login','register','verify','forgot'].forEach(t => document.getElementById(t+'View').classList.toggle('d-none', t!==tab));
+    document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+    document.getElementById('tabRegister').classList.toggle('active', tab==='register');
+    document.getElementById('authTitle').textContent = tab==='register' ? 'Create your account' : tab==='forgot' ? 'Reset password' : 'Welcome back';
+    clearAlert('alertBox');
+  }
+  async function doLogin() {
+    clearAlert('alertBox');
+    try {
+      const res = await api('/auth/login','POST',{ email: document.getElementById('lEmail').value, password: document.getElementById('lPass').value }, false);
+      await afterAuth(res, true);
+    } catch(e){ showAlert('alertBox','danger',e.message); }
+  }
+  async function doRegister() {
+    clearAlert('alertBox');
+    const body = { name:document.getElementById('rName').value, email:document.getElementById('rEmail').value,
+      password:document.getElementById('rPass').value, role:document.getElementById('rRole').value };
+    try {
+      await api('/auth/register','POST',body,false);
+      _pendingEmail = body.email;
+      showAlert('alertBox','success','Account created! Verify your email to continue.');
+      setAuthTab('verify');
+    } catch(e){ showAlert('alertBox','danger',e.message); }
+  }
+  async function doVerify() {
+    clearAlert('alertBox');
+    try {
+      await api('/auth/verify-email','POST',{ email:_pendingEmail, token:document.getElementById('vToken').value }, false);
+      showAlert('alertBox','success','Email verified! Now pick your role.');
+      await api('/auth/select-role','POST',{ email:_pendingEmail, role:document.getElementById('rRole').value }, false);
+      showAlert('alertBox','success','Role selected — please login.');
+      setAuthTab('login');
+    } catch(e){ showAlert('alertBox','danger',e.message); }
+  }
+  async function doForgot() {
+    clearAlert('alertBox');
+    try {
+      await api('/auth/forgot-password','POST',{ email:document.getElementById('fEmail').value }, false);
+      showAlert('alertBox','success','If the email exists, a reset code was sent.');
+      document.getElementById('resetBox').classList.remove('d-none');
+    } catch(e){ showAlert('alertBox','danger',e.message); }
+  }
+  async function doReset() {
+    clearAlert('alertBox');
+    try {
+      await api('/auth/reset-password','POST',{ email:document.getElementById('fEmail').value, token:document.getElementById('fToken').value, newPassword:document.getElementById('fNew').value }, false);
+      showAlert('alertBox','success','Password reset! You can login now.');
+      setAuthTab('login');
+    } catch(e){ showAlert('alertBox','danger',e.message); }
+  }
+</script>
 </body>
 </html>

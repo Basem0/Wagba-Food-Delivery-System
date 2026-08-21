@@ -2,134 +2,159 @@
 boot('CUSTOMER', init);
 
 function init() {
+  window.VIEWS = {
+    restaurants: { title: 'Restaurants', sub: 'Discover kitchens near you' },
+    cart: { title: 'My Cart', sub: 'Review and checkout your items' },
+    orders: { title: 'My Orders', sub: 'Track and manage your orders' },
+    coupons: { title: 'My Coupons', sub: 'Your saved offers' },
+    reviews: { title: 'My Reviews', sub: 'What you thought' }
+  };
+  window.onNav = (v) => { if (v === 'cart') loadCart(); if (v === 'orders') loadOrders(); if (v === 'coupons') loadCoupons(); if (v === 'reviews') loadReviews(); };
+  navTo('restaurants');
   loadRestaurants();
   loadCart();
-  go('restaurants', document.querySelector('#sideNav .active'));
 }
 
-function go(view, btn) {
-  ['restaurants','cart','orders','coupons','reviews'].forEach(v =>
-    document.getElementById(v).classList.toggle('d-none', v !== view));
-  if (btn) {
-    document.querySelectorAll('#sideNav .nav-link').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-  const titles = { restaurants:'Restaurants', cart:'Your Cart', orders:'My Orders', coupons:'My Coupons', reviews:'My Reviews' };
-  document.getElementById('pageTitle').textContent = titles[view];
-  if (view === 'cart') loadCart();
-  if (view === 'orders') loadOrders();
-  if (view === 'coupons') loadCoupons();
-  if (view === 'reviews') loadReviews();
-}
-
-// ---------- Restaurants ----------
 async function loadRestaurants() {
   try {
     const list = await api('/restaurants');
-    const el = document.getElementById('restaurantList');
-    if (!list.length) { el.innerHTML = '<p class="text-muted">No restaurants yet.</p>'; return; }
-    el.innerHTML = list.map(r => `
-      <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
-          ${r.imageUrl ? `<img src="${escapeHtml(r.imageUrl)}" class="card-img-top" style="height:140px;object-fit:cover">` : ''}
-          <div class="card-body">
-            <h5 class="card-title">${escapeHtml(r.name)}</h5>
-            <p class="card-text small text-muted">${escapeHtml(r.description || '')}</p>
-            ${r.status ? statusBadge(r.status.name || r.status) : ''}
-          </div>
-          <div class="card-footer bg-white">
-            <button class="btn btn-sm btn-brand" onclick="viewRestaurant(${r.id})">View Menu</button>
-          </div>
+    window._rests = list || [];
+    const cuis = [...new Set((list || []).map(r => r.cuisine).filter(Boolean))];
+    document.getElementById('filterCuisine').innerHTML = '<option value="">All cuisines</option>' + cuis.map(c => `<option>${escapeHtml(c)}</option>`).join('');
+    renderRestaurants(list || []);
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+
+function renderRestaurants(list) {
+  const el = document.getElementById('restaurantList');
+  if (!list.length) { el.innerHTML = emptyState('bi-shop', 'No restaurants found', 'Try a different search.'); return; }
+  el.innerHTML = list.map(r => `
+    <div class="rest-card" onclick="viewRestaurant(${r.id})">
+      <div class="cover">${r.imageUrl ? `<img src="${escapeHtml(r.imageUrl)}" onerror="onImgError(this,'${escapeHtml(r.name)}')">` : `<i class="bi bi-shop"></i>`}</div>
+      <div class="body">
+        <div class="d-flex justify-between align-center">
+          <div class="name">${escapeHtml(r.name)}</div>
+          ${r.avgRating ? `<span class="small fw-semibold"><i class="bi bi-star-fill text-warning"></i> ${r.avgRating}</span>` : ''}
         </div>
-      </div>`).join('');
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+        <div class="desc muted small text-truncate">${escapeHtml(r.description || 'Delicious food, delivered fast')}</div>
+        <div class="meta">
+          ${r.cuisine ? `<span><i class="bi bi-tags"></i> ${escapeHtml(r.cuisine)}</span>` : ''}
+          ${r.etaMinutes ? `<span><i class="bi bi-clock"></i> ${r.etaMinutes} min</span>` : ''}
+          ${r.deliveryFee != null ? `<span><i class="bi bi-bicycle"></i> ${money(r.deliveryFee)}</span>` : ''}
+          ${r.minOrderTotal ? `<span><i class="bi bi-bag"></i> min ${money(r.minOrderTotal)}</span>` : ''}
+        </div>
+        <div class="mt-2">${r.status ? statusBadge(r.status.name || r.status) : ''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function applyFilters() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const cu = document.getElementById('filterCuisine').value;
+  const sort = document.getElementById('sortBy').value;
+  let list = (window._rests || []).filter(r => {
+    const matchQ = !q || (r.name || '').toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q);
+    const matchC = !cu || r.cuisine === cu;
+    return matchQ && matchC;
+  });
+  if (sort === 'rating') list = [...list].sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
+  else if (sort === 'minOrder') list = [...list].sort((a, b) => (a.minOrderTotal || 0) - (b.minOrderTotal || 0));
+  else list = [...list].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  renderRestaurants(list);
 }
 
 async function viewRestaurant(id) {
   try {
     const foods = await api('/restaurants/' + id + '/foods');
-    document.getElementById('restaurants').querySelector('#restaurantList').classList.add('d-none');
+    const r = (window._rests || []).find(x => x.id === id) || {};
+    document.getElementById('restaurantList').classList.add('d-none');
     const fv = document.getElementById('foodView');
     fv.classList.remove('d-none');
-    document.getElementById('foodRestaurantName').textContent = 'Menu';
+    document.getElementById('foodRestaurantName').textContent = r.name || 'Menu';
+    document.getElementById('restMeta').innerHTML =
+      `${r.cuisine ? escapeHtml(r.cuisine) + ' · ' : ''}${r.etaMinutes ? r.etaMinutes + ' min · ' : ''}${r.deliveryFee != null ? 'Delivery ' + money(r.deliveryFee) : ''}`;
+    document.getElementById('restStatus').innerHTML = r.status ? statusBadge(r.status.name || r.status) : '';
     const fl = document.getElementById('foodList');
-    if (!foods.length) { fl.innerHTML = '<p class="text-muted">No foods available.</p>'; return; }
+    if (!foods.length) { fl.innerHTML = emptyState('bi-egg-fried', 'No dishes yet', 'This restaurant has no items right now.'); return; }
     fl.innerHTML = foods.map(f => `
-      <div class="col-md-4">
-        <div class="card h-100">
-          ${f.imageUrl ? `<img src="${escapeHtml(f.imageUrl)}" class="card-img-top" style="height:120px;object-fit:cover">` : ''}
-          <div class="card-body">
-            <h6>${escapeHtml(f.name)}</h6>
-            <p class="small text-muted">${escapeHtml(f.description || '')}</p>
-            <div class="d-flex justify-content-between align-items-center">
-              <span class="fw-bold">${money(f.price)}</span>
-              ${f.available ? `<button class="btn btn-sm btn-brand" onclick="addToCart(${f.id})">Add</button>`
-                            : `<span class="badge bg-secondary">Unavailable</span>`}
-            </div>
+      <div class="food-card">
+        <div class="pic">${f.imageUrl ? `<img src="${escapeHtml(f.imageUrl)}" onerror="onImgError(this,'${escapeHtml(f.name)}')">` : `<i class="bi bi-egg-fried"></i>`}</div>
+        <div class="body">
+          <div class="d-flex justify-between"><div class="name">${escapeHtml(f.name)}</div>${f.categoryName ? `<span class="badge-soft">${escapeHtml(f.categoryName)}</span>` : ''}</div>
+          <div class="desc">${escapeHtml(f.description || '')}</div>
+          <div class="row">
+            <span class="price">${money(f.price)}</span>
+            ${f.available
+              ? `<button class="btn-brand btn-sm" onclick="addToCart(${f.id})"><i class="bi bi-plus-lg"></i> Add</button>`
+              : `<span class="badge bg-secondary">Unavailable</span>`}
           </div>
         </div>
       </div>`).join('');
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
 function backToRestaurants() {
   document.getElementById('foodView').classList.add('d-none');
-  document.getElementById('restaurants').querySelector('#restaurantList').classList.remove('d-none');
+  document.getElementById('restaurantList').classList.remove('d-none');
   loadRestaurants();
 }
 
 async function addToCart(foodId) {
   try {
     await api('/cart/items', 'POST', { foodId, quantity: 1 });
-    showAlert('alertBox','success','Added to cart');
+    toast('Added', 'Item added to your cart');
     loadCart();
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
-// ---------- Cart ----------
 async function loadCart() {
   try {
     const c = await api('/cart/items');
     const el = document.getElementById('cartList');
+    const pill = document.getElementById('cartPill');
+    const cnt = document.getElementById('cartCount');
     if (!c.items || !c.items.length) {
-      el.innerHTML = '<p class="text-muted">Your cart is empty.</p>';
-      document.getElementById('cartSummary').innerHTML = '';
-      document.getElementById('cartCount').textContent = '';
+      el.innerHTML = emptyState('bi-cart3', 'Your cart is empty', 'Add something tasty from a restaurant.');
+      document.getElementById('cartSummary').querySelector('.card-body').innerHTML = '';
+      if (pill) pill.classList.add('d-none');
+      if (cnt) cnt.classList.add('d-none');
       return;
     }
-    document.getElementById('cartCount').textContent = c.items.length;
-    el.innerHTML = `<table class="table"><thead><tr>
-        <th>Food</th><th>Unit</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead><tbody>
-      ${c.items.map(i => `
-        <tr>
-          <td>${escapeHtml(i.foodName)}</td>
-          <td>${money(i.price)}</td>
-          <td><input type="number" min="1" value="${i.quantity}" class="form-control form-control-sm" style="width:80px"
-              onchange="updateQty(${i.id}, ${i.foodId}, this.value)"></td>
-          <td>${money(i.subtotal)}</td>
-          <td><button class="btn btn-sm btn-outline-danger" onclick="removeItem(${i.id})">Remove</button></td>
-        </tr>`).join('')}
-      </tbody></table>`;
-    document.getElementById('cartSummary').innerHTML = `
-      <div class="d-flex justify-content-between">
-        <h5>Total: ${money(c.total)}</h5>
-        <button class="btn btn-brand" data-bs-toggle="modal" data-bs-target="#checkoutModal">Checkout</button>
-      </div>`;
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+    if (pill) { pill.classList.remove('d-none'); document.getElementById('cartTotalPill').textContent = money(c.total); }
+    if (cnt) { cnt.classList.remove('d-none'); cnt.textContent = c.items.length; }
+    el.innerHTML = `<div class="row g-2">` + c.items.map(i => `
+      <div class="col-12">
+        <div class="card"><div class="card-body d-flex align-center gap-3">
+          <div class="cell-avatar"><i class="bi bi-egg-fried"></i></div>
+          <div class="flex-1">
+            <div class="fw-semibold">${escapeHtml(i.foodName)}</div>
+            <div class="muted small">${money(i.price)} each</div>
+          </div>
+          <div class="d-flex align-center gap-2">
+            <button class="icon-btn" style="width:32px;height:32px" onclick="updateQty(${i.id},${i.foodId},${i.quantity - 1})"><i class="bi bi-dash"></i></button>
+            <span class="fw-semibold" style="min-width:22px;text-align:center">${i.quantity}</span>
+            <button class="icon-btn" style="width:32px;height:32px" onclick="updateQty(${i.id},${i.foodId},${i.quantity + 1})"><i class="bi bi-plus"></i></button>
+          </div>
+          <div class="fw-bold" style="min-width:80px;text-align:right">${money(i.subtotal)}</div>
+          <button class="icon-btn" style="width:32px;height:32px;color:var(--danger)" onclick="removeItem(${i.id})"><i class="bi bi-trash"></i></button>
+        </div></div>
+      </div>`).join('') + `</div>`;
+    document.getElementById('cartSummary').querySelector('.card-body').innerHTML = `
+      <h5 class="mb-3">Summary</h5>
+      <div class="d-flex justify-between"><span class="muted">Subtotal</span><b>${money(c.total)}</b></div>
+      <hr>
+      <div class="d-grid"><button class="btn-brand" data-bs-toggle="modal" data-bs-target="#checkoutModal">Checkout · ${money(c.total)}</button></div>`;
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
 async function updateQty(itemId, foodId, qty) {
-  try {
-    await api('/cart/items/' + itemId, 'PUT', { foodId, quantity: parseInt(qty) });
-    loadCart();
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+  if (qty < 1) return removeItem(itemId);
+  try { await api('/cart/items/' + itemId, 'PUT', { foodId, quantity: parseInt(qty) }); loadCart(); }
+  catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
-
 async function removeItem(itemId) {
-  try {
-    await api('/cart/items/' + itemId, 'DELETE');
-    loadCart();
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+  try { await api('/cart/items/' + itemId, 'DELETE'); loadCart(); }
+  catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
 async function submitCheckout() {
@@ -145,118 +170,93 @@ async function submitCheckout() {
   try {
     const order = await api('/orders/checkout', 'POST', body);
     bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
-    showAlert('alertBox','success','Order #' + order.id + ' placed! Status: ' + order.status);
+    toast('Order placed', 'Order #' + order.id + ' · ' + order.status);
     loadCart();
-    go('orders', document.querySelectorAll('#sideNav .nav-link')[2]);
-  } catch (e) { showAlert('checkoutAlert','danger',e.message); }
+    navTo('orders'); loadOrders();
+  } catch (e) { showAlert('checkoutAlert', 'danger', e.message); }
 }
 
-// ---------- Orders ----------
 async function loadOrders() {
   try {
     const list = await api('/orders');
     const el = document.getElementById('orderList');
-    if (!list.length) { el.innerHTML = '<p class="text-muted">No orders yet.</p>'; return; }
+    if (!list.length) { el.innerHTML = emptyState('bi-receipt', 'No orders yet', 'Your orders will appear here.'); return; }
     el.innerHTML = list.map(o => `
-      <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between">
-          <span>Order #${o.id} — ${escapeHtml(o.restaurantName || '')}</span>
-          <span>${statusBadge(o.status)} ${o.deliveryStatus ? ' / ' + statusBadge(o.deliveryStatus) : ''}</span>
+      <div class="card mb-3 fade-in"><div class="card-body">
+        <div class="d-flex justify-between align-center mb-2">
+          <div><b>Order #${o.id}</b> · ${escapeHtml(o.restaurantName || '')}<div class="muted small">${fmtDateTime(o.createdAt)}</div></div>
+          <div>${statusBadge(o.status)} ${o.deliveryStatus ? statusBadge(o.deliveryStatus) : ''}</div>
         </div>
-        <div class="card-body">
-          <ul class="list-unstyled mb-2">
-            ${o.items.map(i => `<li>${escapeHtml(i.foodName)} × ${i.quantity} — ${money(i.subtotal)}</li>`).join('')}
-          </ul>
-          <div>Total: <b>${money(o.totalPrice)}</b>
-            ${o.discountAmount ? ` <span class="text-success">(saved ${money(o.discountAmount)}${o.couponCode ? ' via ' + escapeHtml(o.couponCode) : ''})</span>` : ''}</div>
-          <div class="mt-2">
+        <div class="row g-2">
+          ${o.items.map(i => `<div class="col-md-6"><div class="d-flex gap-2 align-center"><div class="cell-avatar" style="width:30px;height:30px;font-size:.9rem"><i class="bi bi-egg-fried"></i></div><div class="small">${escapeHtml(i.foodName)} × ${i.quantity}</div></div></div>`).join('')}
+        </div>
+        <hr>
+        <div class="d-flex justify-between align-center flex-wrap gap-2">
+          <div><b>${money(o.totalPrice)}</b>${o.discountAmount ? ` <span class="text-success small">saved ${money(o.discountAmount)}${o.couponCode ? ' · ' + escapeHtml(o.couponCode) : ''}</span>` : ''}</div>
+          <div class="d-flex gap-2">
             ${o.status === 'PENDING' ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelOrder(${o.id})">Cancel</button>` : ''}
-            ${o.status === 'DELIVERED' ? `<button class="btn btn-sm btn-primary" onclick="openReview(${o.id})">Leave Review</button>` : ''}
-            ${(o.status === 'PENDING' || o.status === 'ACCEPTED' || o.status === 'PREPARING' || o.status === 'READY' || o.status === 'OUT_FOR_DELIVERY') ? `<button class="btn btn-sm btn-success" onclick="payOrder(${o.id})">Pay</button>` : ''}
+            ${(['PENDING','ACCEPTED','PREPARING','READY','OUT_FOR_DELIVERY'].includes(o.status)) ? `<button class="btn btn-sm btn-soft" onclick="payOrder(${o.id})"><i class="bi bi-credit-card"></i> Pay</button>` : ''}
+            ${o.status === 'DELIVERED' ? `<button class="btn btn-sm btn-soft" onclick="openReview(${o.id})"><i class="bi bi-star"></i> Review</button>` : ''}
             ${(o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED') ? `<button class="btn btn-sm btn-brand" onclick="trackOrder(${o.id})"><i class="bi bi-geo-alt"></i> Track</button>` : ''}
           </div>
         </div>
-      </div>`).join('');
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+      </div></div>`).join('');
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
 async function cancelOrder(id) {
-  try {
-    await api('/orders/' + id + '/cancel', 'POST');
-    showAlert('alertBox','success','Order cancelled');
-    loadOrders();
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+  try { await api('/orders/' + id + '/cancel', 'POST'); toast('Cancelled', 'Order #' + id); loadOrders(); }
+  catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
-
 async function payOrder(id) {
   try {
     const res = await api('/payments/create-intent', 'POST', { orderId: id });
-    const msg = res.devMode
-      ? 'DEV mode: payment simulated. clientSecret=' + res.clientSecret
-      : 'Stripe clientSecret: ' + res.clientSecret;
-    showAlert('alertBox','success', msg + ' (amount ' + money(res.amount) + ' ' + res.currency + ')');
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+    const msg = res.devMode ? 'DEV mode: payment simulated (amount ' + money(res.amount) + ' ' + res.currency + ')' : 'Stripe clientSecret: ' + res.clientSecret;
+    toast('Payment', msg);
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
-// ---------- Reviews ----------
 async function loadReviews() {
   try {
     const list = await api('/reviews/mine');
     const el = document.getElementById('reviewList');
-    if (!list.length) { el.innerHTML = '<p class="text-muted">No reviews yet.</p>'; return; }
+    if (!list.length) { el.innerHTML = emptyState('bi-star', 'No reviews yet', 'Review a delivered order.'); return; }
     el.innerHTML = list.map(r => `
       <div class="card mb-2"><div class="card-body">
-        <div>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)} — ${escapeHtml(r.restaurantName || 'Restaurant')}</div>
-        <div class="small text-muted">${escapeHtml(r.comment || '')}</div>
+        <div class="text-warning">${stars(r.rating)}</div>
+        <div class="muted small">${escapeHtml(r.restaurantName || 'Restaurant')}</div>
+        <div>${escapeHtml(r.comment || '')}</div>
       </div></div>`).join('');
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
-
 function openReview(orderId) {
   document.getElementById('rvOrderId').value = orderId;
   clearAlert('reviewAlert');
   new bootstrap.Modal(document.getElementById('reviewModal')).show();
 }
-
 async function submitReview() {
   clearAlert('reviewAlert');
-  const body = {
-    orderId: parseInt(document.getElementById('rvOrderId').value),
-    rating: parseInt(document.getElementById('rvRating').value),
-    comment: document.getElementById('rvComment').value
-  };
-  try {
-    await api('/reviews', 'POST', body);
-    bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
-    showAlert('alertBox','success','Review submitted');
-    loadReviews();
-  } catch (e) { showAlert('reviewAlert','danger',e.message); }
+  const body = { orderId: parseInt(document.getElementById('rvOrderId').value), rating: parseInt(document.getElementById('rvRating').value), comment: document.getElementById('rvComment').value };
+  try { await api('/reviews', 'POST', body); bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide(); toast('Thanks!', 'Review submitted'); loadReviews(); }
+  catch (e) { showAlert('reviewAlert', 'danger', e.message); }
 }
 
-// ---------- Coupons ----------
 async function loadCoupons() {
   try {
     const list = await api('/coupons/mine');
     const el = document.getElementById('couponList');
-    if (!list.length) { el.innerHTML = '<p class="text-muted">No coupons assigned.</p>'; return; }
+    if (!list.length) { el.innerHTML = emptyState('bi-ticket-perforated', 'No coupons', 'Admin coupons assigned to you will show here.'); return; }
     el.innerHTML = list.map(c => `
-      <div class="card mb-2"><div class="card-body d-flex justify-content-between align-items-center">
-        <div>
-          <span class="badge bg-danger">${escapeHtml(c.code)}</span>
-          <span class="ms-2">${escapeHtml(c.description || '')}</span><br>
-          <small class="text-muted">${c.discountType} ${c.value}${c.discountType === 'PERCENTAGE' ? '%' : ' EGP'}
-            ${c.minOrderTotal ? ' · min ' + money(c.minOrderTotal) : ''} · expires ${c.expiryDate || 'never'}</small>
-        </div>
+      <div class="card mb-2"><div class="card-body d-flex justify-between align-center">
+        <div><span class="badge bg-danger">${escapeHtml(c.code)}</span> <span class="ms-2">${escapeHtml(c.description || '')}</span><br>
+          <small class="muted">${c.discountType} ${c.value}${c.discountType === 'PERCENTAGE' ? '%' : ' EGP'}${c.minOrderTotal ? ' · min ' + money(c.minOrderTotal) : ''} · expires ${c.expiryDate || 'never'}</small></div>
         <span class="badge ${c.used ? 'bg-secondary' : 'bg-success'}">${c.used ? 'Used' : 'Available'}</span>
       </div></div>`).join('');
-  } catch (e) { showAlert('alertBox','danger',e.message); }
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
 // ---------- Live Tracking ----------
-let trackTimer = null;
-let trackMap = null;
-let trackMarker = null;
-
+let trackTimer = null, trackMap = null, trackMarker = null;
 async function trackOrder(id) {
   document.getElementById('trkId').textContent = id;
   clearAlert('trackAlert');
@@ -269,57 +269,38 @@ async function trackOrder(id) {
     if (trackMap) { trackMap.remove(); trackMap = null; trackMarker = null; }
   }, { once: true });
 }
-
 async function loadTracking(id) {
   try {
     const t = await api('/orders/' + id + '/tracking');
     const d = t.driver;
     document.getElementById('trackDriver').innerHTML = d
-      ? `<div class="card"><div class="card-body d-flex align-items-center gap-3">
-           <div class="logo-mark" style="width:46px;height:46px;font-size:1.2rem;"><i class="bi bi-person-badge"></i></div>
-           <div><div class="fw-semibold">${escapeHtml(d.name)}</div>
-             <div class="muted small">${escapeHtml(d.vehicleType || '')} · ${escapeHtml(d.vehicleNumber || '')}</div></div>
-           <a class="btn btn-soft btn-sm ms-auto" href="tel:${escapeHtml(d.phone || '')}"><i class="bi bi-telephone"></i> Call</a>
-         </div></div>`
+      ? `<div class="driver-info"><div class="logo-mark" style="width:46px;height:46px;font-size:1.2rem;background:var(--gradient);color:#fff;border-radius:12px;display:grid;place-items:center"><i class="bi bi-person-badge"></i></div>
+          <div><div class="fw-semibold">${escapeHtml(d.name)}</div><div class="muted small">${escapeHtml(d.vehicleType || '')} · ${escapeHtml(d.vehicleNumber || '')}</div></div>
+          <a class="btn btn-soft btn-sm ms-auto" href="tel:${escapeHtml(d.phone || '')}"><i class="bi bi-telephone"></i> Call</a></div>`
       : `<div class="alert alert-info mb-0"><i class="bi bi-info-circle"></i> Driver not assigned yet — tracking will appear once a driver accepts your order.</div>`;
-
     document.getElementById('trackTimeline').innerHTML = buildTimeline(t.orderStatus, t.deliveryStatus);
-
     if (d && d.latitude && d.longitude) {
       const lat = d.latitude, lng = d.longitude;
       if (!trackMap) {
         trackMap = L.map('map').setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19, attribution: '&copy; OpenStreetMap'
-        }).addTo(trackMap);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(trackMap);
         trackMarker = L.marker([lat, lng]).addTo(trackMap).bindPopup('Driver').openPopup();
-      } else {
-        trackMarker.setLatLng([lat, lng]);
-        trackMap.setView([lat, lng]);
-      }
+      } else { trackMarker.setLatLng([lat, lng]); trackMap.setView([lat, lng]); }
       setTimeout(() => trackMap.invalidateSize(), 250);
-    } else if (trackMap) {
-      document.getElementById('map').insertAdjacentHTML('afterend',
-        '<p class="text-muted small mt-2"><i class="bi bi-geo-alt"></i> Waiting for the driver to start sharing their location…</p>');
     }
   } catch (e) { showAlert('trackAlert', 'danger', e.message); }
 }
-
 function buildTimeline(orderStatus, deliveryStatus) {
   const steps = [
-    { label: 'Order Placed', done: true },
-    { label: 'Preparing',
-      done: ['PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(orderStatus) },
-    { label: 'Out for Delivery',
-      done: ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(orderStatus) ||
-            ['PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(deliveryStatus) },
-    { label: 'Delivered', done: orderStatus === 'DELIVERED' }
+    { label: 'Placed', done: true, icon: 'bag-check' },
+    { label: 'Preparing', done: ['PREPARING','READY','OUT_FOR_DELIVERY','DELIVERED'].includes(orderStatus), icon: 'egg-fried' },
+    { label: 'Out for delivery', done: ['OUT_FOR_DELIVERY','DELIVERED'].includes(orderStatus) || ['PICKED_UP','OUT_FOR_DELIVERY','DELIVERED'].includes(deliveryStatus), icon: 'bicycle' },
+    { label: 'Delivered', done: orderStatus === 'DELIVERED', icon: 'house-check' }
   ];
-  return '<div class="d-flex gap-2">' + steps.map(s => `
-    <div class="flex-fill text-center">
-      <div class="mx-auto mb-1" style="width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
-        ${s.done ? 'background:var(--gradient);color:#fff' : 'background:var(--surface-2);color:var(--muted)'}">
-        <i class="bi bi-${s.done ? 'check-lg' : 'circle'}"></i></div>
-      <div class="small ${s.done ? 'fw-semibold' : 'muted'}">${s.label}</div>
-    </div>`).join('') + '</div>';
+  return '<div class="timeline">' + steps.map(s => `
+    <div class="step ${s.done ? 'done' : ''}"><div class="dot"><i class="bi bi-${s.icon}"></i></div><div class="lbl">${s.label}</div></div>`).join('') + '</div>';
+}
+
+function emptyState(icon, title, sub) {
+  return `<div class="empty-state"><div class="ico"><i class="bi bi-${icon}"></i></div><div class="fw-semibold">${escapeHtml(title)}</div><div class="small">${escapeHtml(sub || '')}</div></div>`;
 }
