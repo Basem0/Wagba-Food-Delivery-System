@@ -69,6 +69,13 @@ public class ReviewService {
         review.setRating(request.getRating());
         review.setComment(request.getComment());
         review = reviewRepository.save(review);
+
+        Restaurant restaurant = order.getRestaurant();
+        List<Review> allReviews = reviewRepository.findByOrderRestaurant(restaurant);
+        double avg = allReviews.stream().mapToInt(r -> r.getRating()).average().orElse(0.0);
+        restaurant.setAvgRating(Math.round(avg * 10.0) / 10.0);
+        restaurantRepository.save(restaurant);
+
         return toResponse(review);
     }
 

@@ -2,6 +2,7 @@ package com.wagba.dto.restaurant;
 
 import com.wagba.entity.enums.RestaurantStatus;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public record RestaurantResponse(
@@ -10,6 +11,11 @@ public record RestaurantResponse(
         String description,
         String imageUrl,
         RestaurantStatus status,
-        List<CategoryResponse> categories
+        List<CategoryResponse> categories,
+        String cuisine,
+        Integer etaMinutes,
+        BigDecimal deliveryFee,
+        BigDecimal minOrderTotal,
+        Double avgRating
 ) {
 }

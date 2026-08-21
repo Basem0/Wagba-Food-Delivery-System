@@ -4,6 +4,7 @@ import com.wagba.entity.enums.RestaurantStatus;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -20,6 +21,18 @@ public class Restaurant {
     private String description;
 
     private String imageUrl;
+
+    private String cuisine;
+
+    private Integer etaMinutes;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal deliveryFee;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal minOrderTotal;
+
+    private Double avgRating;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -69,6 +82,46 @@ public class Restaurant {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getCuisine() {
+        return cuisine;
+    }
+
+    public void setCuisine(String cuisine) {
+        this.cuisine = cuisine;
+    }
+
+    public Integer getEtaMinutes() {
+        return etaMinutes;
+    }
+
+    public void setEtaMinutes(Integer etaMinutes) {
+        this.etaMinutes = etaMinutes;
+    }
+
+    public BigDecimal getDeliveryFee() {
+        return deliveryFee;
+    }
+
+    public void setDeliveryFee(BigDecimal deliveryFee) {
+        this.deliveryFee = deliveryFee;
+    }
+
+    public BigDecimal getMinOrderTotal() {
+        return minOrderTotal;
+    }
+
+    public void setMinOrderTotal(BigDecimal minOrderTotal) {
+        this.minOrderTotal = minOrderTotal;
+    }
+
+    public Double getAvgRating() {
+        return avgRating;
+    }
+
+    public void setAvgRating(Double avgRating) {
+        this.avgRating = avgRating;
     }
 
     public RestaurantStatus getStatus() {

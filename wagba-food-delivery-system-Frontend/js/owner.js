@@ -37,13 +37,27 @@ function showProfileForm() {
         <div class="col-md-6"><label class="form-label">Image URL</label><input id="pImg" class="form-control"></div>
       </div>
       <div class="mb-2 mt-2"><label class="form-label">Description</label><input id="pDesc" class="form-control"></div>
+      <div class="row g-2">
+        <div class="col-md-6"><label class="form-label">Cuisine</label><input id="pCuisine" class="form-control" placeholder="e.g. Grill"></div>
+        <div class="col-md-3"><label class="form-label">ETA (min)</label><input id="pEta" type="number" class="form-control"></div>
+        <div class="col-md-3"><label class="form-label">Delivery fee</label><input id="pFee" type="number" step="0.01" class="form-control"></div>
+      </div>
+      <div class="mb-2 mt-2"><label class="form-label">Min order (EGP)</label><input id="pMin" type="number" step="0.01" class="form-control"></div>
       <button class="btn-brand" onclick="submitProfile()">Submit for approval</button>
     </div></div>`;
 }
 
 async function submitProfile() {
   const me = getUser();
-  const body = { name: document.getElementById('pName').value, description: document.getElementById('pDesc').value, imageUrl: document.getElementById('pImg').value };
+  const body = {
+    name: document.getElementById('pName').value,
+    description: document.getElementById('pDesc').value,
+    imageUrl: document.getElementById('pImg').value,
+    cuisine: document.getElementById('pCuisine').value,
+    etaMinutes: document.getElementById('pEta').value || null,
+    deliveryFee: document.getElementById('pFee').value || null,
+    minOrderTotal: document.getElementById('pMin').value || null
+  };
   try {
     await api('/restaurant-owner/profile?userId=' + me.id, 'POST', body);
     toast('Submitted', 'Waiting for admin approval');
@@ -51,6 +65,37 @@ async function submitProfile() {
     document.getElementById('view-dashboard').classList.remove('d-none');
     loadRestaurant();
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+
+function openEditRestaurant() {
+  clearAlert('restInfoAlert');
+  const r = window._rest || {};
+  document.getElementById('riName').value = r.name || '';
+  document.getElementById('riDesc').value = r.description || '';
+  document.getElementById('riImg').value = r.imageUrl || '';
+  document.getElementById('riCuisine').value = r.cuisine || '';
+  document.getElementById('riEta').value = r.etaMinutes != null ? r.etaMinutes : '';
+  document.getElementById('riFee').value = r.deliveryFee != null ? r.deliveryFee : '';
+  document.getElementById('riMin').value = r.minOrderTotal != null ? r.minOrderTotal : '';
+  new bootstrap.Modal(document.getElementById('restInfoModal')).show();
+}
+async function saveRestaurantInfo() {
+  clearAlert('restInfoAlert');
+  const body = {
+    name: document.getElementById('riName').value,
+    description: document.getElementById('riDesc').value,
+    imageUrl: document.getElementById('riImg').value,
+    cuisine: document.getElementById('riCuisine').value,
+    etaMinutes: document.getElementById('riEta').value || null,
+    deliveryFee: document.getElementById('riFee').value || null,
+    minOrderTotal: document.getElementById('riMin').value || null
+  };
+  try {
+    await api('/restaurant-owner/restaurant', 'PUT', body);
+    bootstrap.Modal.getInstance(document.getElementById('restInfoModal')).hide();
+    toast('Saved', 'Restaurant info updated');
+    loadRestaurant();
+  } catch (e) { showAlert('restInfoAlert', 'danger', e.message); }
 }
 
 async function renderDashboard(r) {

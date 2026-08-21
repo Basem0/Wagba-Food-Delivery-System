@@ -85,6 +85,10 @@ public class RestaurantService {
         if (request.getName() != null) restaurant.setName(request.getName());
         if (request.getDescription() != null) restaurant.setDescription(request.getDescription());
         if (request.getImageUrl() != null) restaurant.setImageUrl(request.getImageUrl());
+        if (request.getCuisine() != null) restaurant.setCuisine(request.getCuisine());
+        if (request.getEtaMinutes() != null) restaurant.setEtaMinutes(request.getEtaMinutes());
+        if (request.getDeliveryFee() != null) restaurant.setDeliveryFee(request.getDeliveryFee());
+        if (request.getMinOrderTotal() != null) restaurant.setMinOrderTotal(request.getMinOrderTotal());
 
         restaurantRepository.save(restaurant);
         return toResponse(restaurant);
@@ -153,7 +157,12 @@ public class RestaurantService {
                 restaurant.getDescription(),
                 restaurant.getImageUrl(),
                 restaurant.getStatus(),
-                categoryResponses
+                categoryResponses,
+                restaurant.getCuisine(),
+                restaurant.getEtaMinutes(),
+                restaurant.getDeliveryFee(),
+                restaurant.getMinOrderTotal(),
+                restaurant.getAvgRating()
         );
     }
 

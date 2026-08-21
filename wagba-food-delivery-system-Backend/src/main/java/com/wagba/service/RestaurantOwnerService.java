@@ -68,6 +68,10 @@ public class RestaurantOwnerService {
         restaurant.setName(request.getName());
         restaurant.setDescription(request.getDescription());
         restaurant.setImageUrl(request.getImageUrl());
+        restaurant.setCuisine(request.getCuisine());
+        restaurant.setEtaMinutes(request.getEtaMinutes());
+        restaurant.setDeliveryFee(request.getDeliveryFee());
+        restaurant.setMinOrderTotal(request.getMinOrderTotal());
         restaurant.setOwner(user);
 
         restaurantRepository.save(restaurant);

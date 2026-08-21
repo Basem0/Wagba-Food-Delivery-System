@@ -30,6 +30,10 @@
         <div id="profileBox"></div>
 
         <div id="view-dashboard" class="view">
+          <div class="d-flex justify-between align-center mb-3">
+            <div class="muted small">Manage your storefront details customers see.</div>
+            <button class="btn-soft btn-sm" onclick="openEditRestaurant()"><i class="bi bi-pencil-square"></i> Edit restaurant info</button>
+          </div>
           <div id="dashStats" class="row g-3 mb-3"></div>
           <div class="card"><div class="card-body">
             <h5 class="mb-3">Recent orders</h5>
@@ -83,6 +87,28 @@
           <div class="mb-2 mt-2"><label class="form-label">Image URL</label><input id="fImg" class="form-control"></div>
         </div>
         <div class="modal-footer"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-brand" onclick="saveFood()">Save</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit restaurant info modal -->
+  <div class="modal fade" id="restInfoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Restaurant info</h5><button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button></div>
+        <div class="modal-body">
+          <div id="restInfoAlert"></div>
+          <div class="mb-2"><label class="form-label">Name</label><input id="riName" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Description</label><input id="riDesc" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Image URL</label><input id="riImg" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Cuisine</label><input id="riCuisine" class="form-control" placeholder="e.g. Italian, Grill"></div>
+          <div class="row g-2">
+            <div class="col-4"><label class="form-label">ETA (min)</label><input id="riEta" type="number" class="form-control"></div>
+            <div class="col-4"><label class="form-label">Delivery fee (EGP)</label><input id="riFee" type="number" step="0.01" class="form-control"></div>
+            <div class="col-4"><label class="form-label">Min order (EGP)</label><input id="riMin" type="number" step="0.01" class="form-control"></div>
+          </div>
+        </div>
+        <div class="modal-footer"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-brand" onclick="saveRestaurantInfo()">Save</button></div>
       </div>
     </div>
   </div>
