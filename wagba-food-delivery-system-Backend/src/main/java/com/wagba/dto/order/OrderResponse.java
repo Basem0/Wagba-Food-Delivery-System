@@ -9,6 +9,8 @@ public record OrderResponse(
         Long restaurantId,
         String restaurantName,
         BigDecimal totalPrice,
+        BigDecimal discountAmount,
+        String couponCode,
         AddressResponse deliveryAddress,
         List<OrderItemResponse> items,
         String deliveryStatus,

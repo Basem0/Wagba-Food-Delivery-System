@@ -3,6 +3,7 @@ package com.wagba.dto.order;
 public class OrderRequest {
 
     private Long addressId;
+    private String couponCode;
     private String city;
     private String street;
     private String buildingNumber;
@@ -15,6 +16,14 @@ public class OrderRequest {
 
     public void setAddressId(Long addressId) {
         this.addressId = addressId;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(String couponCode) {
+        this.couponCode = couponCode;
     }
 
     public String getCity() {

@@ -25,6 +25,7 @@ import com.wagba.repository.OrderItemRepository;
 import com.wagba.repository.OrderRepository;
 import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.UserRepository;
+import com.wagba.service.CouponService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +47,7 @@ public class OrderService {
     private final FoodRepository foodRepository;
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
+    private final CouponService couponService;
 
     public OrderService(OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
@@ -55,7 +57,8 @@ public class OrderService {
                         AddressRepository addressRepository,
                         FoodRepository foodRepository,
                         RestaurantRepository restaurantRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        CouponService couponService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.deliveryRepository = deliveryRepository;
@@ -65,6 +68,7 @@ public class OrderService {
         this.foodRepository = foodRepository;
         this.restaurantRepository = restaurantRepository;
         this.userRepository = userRepository;
+        this.couponService = couponService;
     }
 
     private User currentUser(String email) {
@@ -119,17 +123,25 @@ public class OrderService {
         order.setStatus(OrderStatus.PENDING);
 
         List<OrderItem> items = new ArrayList<>();
-        BigDecimal total = BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
         for (CartItem ci : cart.getItems()) {
             OrderItem oi = new OrderItem();
             oi.setOrder(order);
             oi.setFood(ci.getFood());
             oi.setQuantity(ci.getQuantity());
             oi.setUnitPrice(ci.getFood().getPrice());
-            total = total.add(ci.getFood().getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())));
+            subtotal = subtotal.add(ci.getFood().getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())));
             items.add(oi);
         }
-        order.setTotalPrice(total);
+
+        BigDecimal discount = BigDecimal.ZERO;
+        String couponCode = request.getCouponCode();
+        if (couponCode != null && !couponCode.isBlank()) {
+            discount = couponService.applyCoupon(couponCode, customer, subtotal);
+        }
+        order.setDiscountAmount(discount);
+        order.setCouponCode(couponCode);
+        order.setTotalPrice(subtotal.subtract(discount));
         order = orderRepository.save(order);
         orderItemRepository.saveAll(items);
         order.setItems(items);
@@ -305,6 +317,8 @@ public class OrderService {
                 order.getRestaurant().getId(),
                 order.getRestaurant().getName(),
                 order.getTotalPrice(),
+                order.getDiscountAmount(),
+                order.getCouponCode(),
                 addressResponse,
                 items,
                 deliveryStatus,
