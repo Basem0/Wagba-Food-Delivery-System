@@ -40,6 +40,11 @@ public class User {
 
     private LocalDateTime verificationTokenExpiry;
 
+    @Column(unique = true)
+    private String passwordResetToken;
+
+    private LocalDateTime passwordResetTokenExpiry;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OnboardingStatus onboardingStatus;
@@ -132,6 +137,22 @@ public class User {
 
 	public void setVerificationTokenExpiry(LocalDateTime verificationTokenExpiry) {
 		this.verificationTokenExpiry = verificationTokenExpiry;
+	}
+
+	public String getPasswordResetToken() {
+		return passwordResetToken;
+	}
+
+	public void setPasswordResetToken(String passwordResetToken) {
+		this.passwordResetToken = passwordResetToken;
+	}
+
+	public LocalDateTime getPasswordResetTokenExpiry() {
+		return passwordResetTokenExpiry;
+	}
+
+	public void setPasswordResetTokenExpiry(LocalDateTime passwordResetTokenExpiry) {
+		this.passwordResetTokenExpiry = passwordResetTokenExpiry;
 	}
 
 	public OnboardingStatus getOnboardingStatus() {

@@ -35,4 +35,26 @@ public class EmailService {
 
         mailSender.send(message);
 	}
+
+	public void sendPasswordResetEmail(String recipientEmail, String resetToken)
+	{
+		String resetLink =
+                "http://localhost:8081/api/v1/auth/reset-password?token="
+                        + resetToken;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+
+        message.setTo(recipientEmail);
+        message.setSubject("Wagba - Reset Your Password");
+
+        message.setText(
+                "Hello from Wagba!\n\n" +
+                "Click the link below to reset your password:\n\n" +
+                resetLink +
+                "\n\n" +
+                "This link will expire in 15 minutes."
+        );
+
+        mailSender.send(message);
+	}
 }

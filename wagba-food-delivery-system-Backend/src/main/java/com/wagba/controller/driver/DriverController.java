@@ -3,10 +3,12 @@ package com.wagba.controller.driver;
 import com.wagba.dto.driver.DriverProfileRequest;
 import com.wagba.service.DriverService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/driver")
+@RequestMapping("/api/v1/driver")
+@PreAuthorize("hasRole('DRIVER')")
 public class DriverController {
 
     private final DriverService driverService;
