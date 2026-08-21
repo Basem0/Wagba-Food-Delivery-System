@@ -21,4 +21,7 @@ jwt.expiration=86400000
 
 google.client.id=YOUR_GOOGLE_CLIENT_ID
 
+admin.email=admin@wagba.com
+admin.password=CHANGE_ME_ADMIN_PASSWORD
+
 server.port=8081

@@ -28,10 +28,10 @@ public class AdminService {
 
     @Transactional
     public void approveDriver(Long driverId) {
-        Driver driver = driverRepository.findById(driverId)
+        User user = userRepository.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Driver driver = driverRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
-
-        User user = driver.getUser();
 
         if (user.getStatus() != UserStatus.PENDING) {
             throw new RuntimeException("Only pending drivers can be approved");
@@ -43,10 +43,10 @@ public class AdminService {
 
     @Transactional
     public void rejectDriver(Long driverId) {
-        Driver driver = driverRepository.findById(driverId)
+        User user = userRepository.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Driver driver = driverRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Driver not found"));
-
-        User user = driver.getUser();
 
         if (user.getStatus() != UserStatus.PENDING) {
             throw new RuntimeException("Only pending drivers can be rejected");
