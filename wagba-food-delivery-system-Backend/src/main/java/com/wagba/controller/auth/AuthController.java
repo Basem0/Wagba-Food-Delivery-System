@@ -11,11 +11,17 @@ import org.springframework.web.bind.annotation.*;
 
 import com.wagba.dto.auth.LoginRequest;
 import com.wagba.dto.auth.RegisterRequest;
+import com.wagba.entity.User;
 import com.wagba.entity.enums.UserRole;
+import com.wagba.repository.UserRepository;
+import com.wagba.security.SecurityUtil;
 import com.wagba.security.JwtUtil;
 import com.wagba.service.AuthService;
 import com.wagba.service.EmailVerificationService;
 import jakarta.validation.Valid;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -25,15 +31,18 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
     public AuthController(AuthService authService,
                           EmailVerificationService emailVerificationService,
                           AuthenticationManager authenticationManager,
-                          JwtUtil jwtUtil) {
+                          JwtUtil jwtUtil,
+                          UserRepository userRepository) {
         this.authService = authService;
         this.emailVerificationService = emailVerificationService;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/register")
@@ -49,7 +58,13 @@ public class AuthController {
     }
 
     @PostMapping("/select-role")
-    public ResponseEntity<String> selectRole(@RequestParam Long userId, @RequestParam UserRole role) {
+    public ResponseEntity<String> selectRole(@RequestParam(required = false) Long userId,
+                                            @RequestParam(required = false) String email,
+                                            @RequestParam UserRole role) {
+        if (userId == null && email != null) {
+            userId = userRepository.findByEmail(email).map(User::getId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+        }
         authService.selectRole(userId, role);
         return ResponseEntity.ok("Role selected successfully");
     }
@@ -93,5 +108,19 @@ public class AuthController {
     public ResponseEntity<String> googleLogin(@RequestParam String idToken) {
         String token = authService.googleLogin(idToken);
         return ResponseEntity.ok(token);
+    }
+
+    @GetMapping("/me")
+    public Map<String, Object> me() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", user.getId());
+        result.put("name", user.getName());
+        result.put("email", user.getEmail());
+        result.put("role", user.getRole().name());
+        result.put("status", user.getStatus().name());
+        return result;
     }
 }

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wagba — Restaurant Owner</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link href="css/styles.css" rel="stylesheet">
+</head>
+<body class="bg-orbs">
+  <div id="nav"></div>
+  <div class="dash-layout">
+    <nav id="ownerTabs" class="wagba-side">
+      <div class="side-brand"><span class="logo-mark" style="width:36px;height:36px;font-size:1.1rem;"><i class="bi bi-shop"></i></span> Wagba</div>
+      <a class="nav-link active" href="#" data-v="categories"><i class="bi bi-tags"></i> Categories</a>
+      <a class="nav-link" href="#" data-v="foods"><i class="bi bi-egg-fried"></i> Foods</a>
+      <a class="nav-link" href="#" data-v="orders"><i class="bi bi-receipt"></i> Orders</a>
+    </nav>
+
+    <main class="wagba-main">
+      <div id="alertBox"></div>
+      <div id="profileBox"></div>
+      <div id="dashboard" class="d-none">
+        <div class="card mb-4 anim-fade-up">
+          <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <h4 id="rName" class="m-0"></h4>
+              <p class="muted mb-0" id="rDesc"></p>
+            </div>
+            <div id="rStatus"></div>
+          </div>
+        </div>
+
+        <section id="categories">
+          <h2 class="section-title">Categories</h2>
+          <div id="catList" class="mb-3 d-flex flex-wrap gap-2"></div>
+          <form class="row g-2 align-items-center" onsubmit="return addCategory(event)">
+            <div class="col-auto flex-grow-1">
+              <input id="catName" class="form-control" placeholder="New category name" required>
+            </div>
+            <div class="col-auto"><button class="btn btn-brand"><i class="bi bi-plus-lg"></i> Add Category</button></div>
+          </form>
+        </section>
+
+        <section id="foods" class="d-none">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="section-title mb-0">Foods</h2>
+            <button class="btn btn-brand" onclick="openFoodModal()"><i class="bi bi-plus-lg"></i> Add Food</button>
+          </div>
+          <div id="foodList"></div>
+        </section>
+
+        <section id="orders" class="d-none">
+          <h2 class="section-title">Orders</h2>
+          <div id="orderList"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- food modal -->
+  <div class="modal fade" id="foodModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-egg-fried"></i> Food</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div id="foodAlert"></div>
+          <input type="hidden" id="fId">
+          <div class="mb-2"><label class="form-label">Name</label><input id="fName" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Description</label><input id="fDesc" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Price (EGP)</label><input id="fPrice" type="number" step="0.01" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Image URL</label><input id="fImg" class="form-control"></div>
+          <div class="mb-2"><label class="form-label">Category</label><select id="fCat" class="form-select"></select></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-soft" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-brand" onclick="saveFood()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/owner.js"></script>
+</body>
+</html>

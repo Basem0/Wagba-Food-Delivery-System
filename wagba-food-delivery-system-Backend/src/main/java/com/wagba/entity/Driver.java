@@ -27,6 +27,10 @@ public class Driver {
     @Column(nullable = false)
     private String licenseNumber;
 
+    private Double latitude;
+    private Double longitude;
+    private LocalDateTime locationUpdatedAt;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
@@ -93,5 +97,29 @@ public class Driver {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public LocalDateTime getLocationUpdatedAt() {
+        return locationUpdatedAt;
+    }
+
+    public void setLocationUpdatedAt(LocalDateTime locationUpdatedAt) {
+        this.locationUpdatedAt = locationUpdatedAt;
     }
 }

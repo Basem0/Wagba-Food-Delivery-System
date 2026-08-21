@@ -8,9 +8,11 @@ import com.wagba.entity.enums.UserRole;
 import com.wagba.entity.enums.UserStatus;
 import com.wagba.repository.DriverRepository;
 import com.wagba.repository.UserRepository;
-
+import com.wagba.repository.DriverRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 public class DriverService {
@@ -82,5 +84,17 @@ public class DriverService {
         user.setStatus(UserStatus.PENDING);
 
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateLocation(String email, Double latitude, Double longitude) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Driver driver = driverRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Driver profile not found"));
+        driver.setLatitude(latitude);
+        driver.setLongitude(longitude);
+        driver.setLocationUpdatedAt(LocalDateTime.now());
+        driverRepository.save(driver);
     }
 }
