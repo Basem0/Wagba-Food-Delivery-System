@@ -1,8 +1,11 @@
 package com.wagba.controller.driver;
 
+import com.wagba.dto.PageResponse;
 import com.wagba.dto.order.DeliveryResponse;
 import com.wagba.security.SecurityUtil;
 import com.wagba.service.OrderService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,13 +24,17 @@ public class DriverDeliveryController {
     }
 
     @GetMapping("/available")
-    public List<DeliveryResponse> available() {
-        return orderService.availableDeliveries();
+    public PageResponse<DeliveryResponse> available(@RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        return orderService.availableDeliveries(pageable);
     }
 
     @GetMapping
-    public List<DeliveryResponse> myDeliveries() {
-        return orderService.myDeliveries(SecurityUtil.getCurrentUserEmail());
+    public PageResponse<DeliveryResponse> myDeliveries(@RequestParam(defaultValue = "0") int page,
+                                                      @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        return orderService.myDeliveries(SecurityUtil.getCurrentUserEmail(), pageable);
     }
 
     @PostMapping("/{id}/accept")

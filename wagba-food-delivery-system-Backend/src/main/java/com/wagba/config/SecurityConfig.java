@@ -61,6 +61,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/restaurants/**").permitAll()
                 .requestMatchers("/api/v1/reviews/restaurant/**").permitAll()
                 .requestMatchers("/api/v1/reviews/driver/**").permitAll()
+                .requestMatchers("/ws/**").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )

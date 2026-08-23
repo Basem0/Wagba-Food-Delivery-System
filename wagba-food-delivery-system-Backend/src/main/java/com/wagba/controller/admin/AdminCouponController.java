@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/admin/coupons")
 @PreAuthorize("hasRole('ADMIN')")
@@ -28,5 +30,10 @@ public class AdminCouponController {
     public ResponseEntity<String> assign(@RequestBody AssignCouponRequest request) {
         couponService.assignCouponToUser(request.getUserId(), request.getCode());
         return ResponseEntity.ok("Coupon assigned to user");
+    }
+
+    @GetMapping
+    public List<CouponResponse> list() {
+        return couponService.listCoupons();
     }
 }

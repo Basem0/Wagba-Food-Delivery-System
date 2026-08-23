@@ -10,6 +10,8 @@ public record FoodResponse(
         String imageUrl,
         boolean available,
         Long categoryId,
-        String categoryName
+        String categoryName,
+        BigDecimal discountPrice,
+        boolean offer
 ) {
 }

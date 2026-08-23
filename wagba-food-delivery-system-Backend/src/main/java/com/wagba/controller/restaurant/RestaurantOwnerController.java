@@ -11,6 +11,7 @@ import com.wagba.security.SecurityUtil;
 import com.wagba.service.FoodService;
 import com.wagba.service.RestaurantOwnerService;
 import com.wagba.service.RestaurantService;
+import com.wagba.service.WalletService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -25,15 +26,18 @@ public class RestaurantOwnerController {
     private final RestaurantOwnerService restaurantOwnerService;
     private final RestaurantService restaurantService;
     private final FoodService foodService;
+    private final WalletService walletService;
 
     public RestaurantOwnerController(
             RestaurantOwnerService restaurantOwnerService,
             RestaurantService restaurantService,
-            FoodService foodService
+            FoodService foodService,
+            WalletService walletService
     ) {
         this.restaurantOwnerService = restaurantOwnerService;
         this.restaurantService = restaurantService;
         this.foodService = foodService;
+        this.walletService = walletService;
     }
 
     @PostMapping("/profile")
@@ -96,5 +100,10 @@ public class RestaurantOwnerController {
     @GetMapping("/foods")
     public List<FoodResponse> myFoods() {
         return foodService.getMyRestaurantFoods(SecurityUtil.getCurrentUserEmail());
+    }
+
+    @GetMapping("/wallet")
+    public com.wagba.dto.wallet.WalletResponse myWallet() {
+        return walletService.getWalletInfo(SecurityUtil.getCurrentUserEmail());
     }
 }

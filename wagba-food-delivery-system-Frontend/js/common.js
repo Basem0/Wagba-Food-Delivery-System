@@ -16,8 +16,8 @@ function toggleTheme() {
   const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = t;
   localStorage.setItem('wagba_theme', t);
-  const icon = document.querySelector('.wagba-nav .icon-btn i');
-  if (icon) icon.className = 'bi bi-' + (t === 'dark' ? 'sun' : 'moon-stars');
+  const icon = document.getElementById('themeBtn');
+  if (icon) icon.querySelector('i').className = 'bi bi-' + (t === 'dark' ? 'sun' : 'moon-stars');
 }
 
 // ---------- auth storage ----------
@@ -92,11 +92,11 @@ function boot(role, cb) {
   const token = getToken();
   if (!token) { location.href = 'index.html'; return; }
   const u = getUser();
-  if (u && u.role === role) { renderNav(u); cb(u); return; }
+  if (u && u.role === role) { renderNav(u); cb(u); connectRealtime(); return; }
   api('/auth/me').then(me => {
     setUser(me);
     if (me.role !== role) { location.href = dashFor(me.role); return; }
-    renderNav(me); cb(me);
+    renderNav(me); cb(me); connectRealtime();
   }).catch(() => { location.href = 'index.html'; });
 }
 
@@ -120,7 +120,15 @@ function renderNav(me) {
       <span class="text-dark fw-medium">${escapeHtml(me.name || me.email)}</span>
       <span class="badge role-pill">${me.role}</span>
     </div>
-    <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+    <button id="notifBtn" class="icon-btn position-relative" onclick="toggleNotifPanel(event)" title="Notifications">
+      <i class="bi bi-bell"></i>
+      <span id="notifBadge" class="notif-badge d-none">0</span>
+    </button>
+    <div id="notifPanel" class="notif-panel d-none">
+      <div class="notif-head"><span>Notifications</span><button class="btn btn-link btn-sm p-0" onclick="markAllRead()">Mark all read</button></div>
+      <div id="notifList" class="notif-list"></div>
+    </div>
+    <button id="themeBtn" class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
       <i class="bi bi-${isDark ? 'sun' : 'moon-stars'}"></i>
     </button>
     <div class="api-box">
@@ -130,6 +138,16 @@ function renderNav(me) {
     <button class="btn btn-soft btn-sm" onclick="doLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>`;
   const inp = document.getElementById('apiInput');
   inp.addEventListener('change', () => setApiBase(inp.value));
+  if (!window.__notifOutsideBound) {
+    document.addEventListener('click', (e) => {
+      const panel = document.getElementById('notifPanel');
+      if (!panel || panel.classList.contains('d-none')) return;
+      const btn = e.target.closest && e.target.closest('#notifBtn');
+      if (!btn && !panel.contains(e.target)) panel.classList.add('d-none');
+    });
+    window.__notifOutsideBound = true;
+  }
+  refreshNotifications();
 }
 
 function doLogout() {
@@ -137,6 +155,28 @@ function doLogout() {
     clearAuth(); location.href = 'index.html';
   });
 }
+
+// ---------- notifications ----------
+async function refreshNotifications() {
+  try {
+    const d = await api('/notifications?page=0&size=20');
+    const items = d.content || [];
+    const unread = typeof d.unreadCount === 'number' ? d.unreadCount : items.filter(n => !n.read).length;
+    const badge = document.getElementById('notifBadge');
+    if (badge) { badge.textContent = unread; badge.classList.toggle('d-none', unread === 0); }
+    const listEl = document.getElementById('notifList');
+    if (listEl) {
+      listEl.innerHTML = items.length ? items.map(n => `
+        <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markRead(${n.id})">
+          <div class="notif-title">${escapeHtml(n.title || '')}</div>
+          <div class="notif-msg small muted">${escapeHtml(n.message || '')}</div>
+        </div>`).join('') : '<div class="p-3 small muted">No notifications</div>';
+    }
+  } catch (e) {}
+}
+function toggleNotifPanel(e) { if (e && e.stopPropagation) e.stopPropagation(); const p = document.getElementById('notifPanel'); if (p) p.classList.toggle('d-none'); }
+async function markRead(id) { try { await api('/notifications/' + id + '/read', 'POST'); await refreshNotifications(); } catch (e) {} }
+async function markAllRead() { try { await api('/notifications/read-all', 'POST'); await refreshNotifications(); } catch (e) {} }
 
 // ---------- sidebar navigation (role dashboards) ----------
 function navTo(view) {
@@ -214,4 +254,67 @@ function fmtDateTime(s) {
   const d = new Date(s);
   if (isNaN(d)) return escapeHtml(s);
   return d.toLocaleString();
+}
+function fmtTimeAgo(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d)) return '';
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return sec + 's ago';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min + 'm ago';
+  const hr = Math.floor(min / 60);
+  return hr + 'h ago';
+}
+function formatAddr(a) {
+  if (!a) return '';
+  return [a.street, a.area, a.city, a.building, a.apartment].filter(Boolean).map(String).join(', ');
+}
+
+// ============================================================
+//  Real-time (WebSocket / STOMP over SockJS)
+// ============================================================
+let __rtClient = null;
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector('script[src="' + src + '"]')) return resolve();
+    const s = document.createElement('script');
+    s.src = src; s.onload = () => resolve(); s.onerror = () => reject();
+    document.head.appendChild(s);
+  });
+}
+function wsBase() { return getApiBase().replace(/\/api\/v1\/?$/, ''); }
+async function connectRealtime() {
+  const token = getToken();
+  if (!token || __rtClient) return;
+  try {
+    await loadScriptOnce('https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js');
+    await loadScriptOnce('https://cdn.jsdelivr.net/npm/@stomp/stompjs@6.1.2/bundle-browser.min.js');
+  } catch (e) { return; }
+  try {
+    const socket = new SockJS(wsBase() + '/ws?token=' + encodeURIComponent(token));
+    const client = Stomp.over(socket);
+    client.debug = () => {};
+    client.reconnectDelay = 5000;
+    client.heartbeatOutgoing = 20000;
+    client.heartbeatIncoming = 20000;
+    client.connect({ token: token }, () => {
+      client.subscribe('/user/queue/notifications', (msg) => {
+        try { handleRealtime(JSON.parse(msg.body)); } catch (e) {}
+      });
+      const u = getUser();
+      if (u && u.role === 'DRIVER') {
+        client.subscribe('/topic/driver/available', () => {
+          if (window.__realtimeRefresh) window.__realtimeRefresh({ type: 'AVAILABLE' });
+        });
+      }
+    }, () => { /* connection error -> will retry via reconnectDelay */ });
+    __rtClient = client;
+  } catch (e) { /* ignore */ }
+}
+function handleRealtime(p) {
+  if (!p) return;
+  if (p.title) toast(p.title, p.message, (p.type === 'ORDER_REJECTED' || p.type === 'ORDER_CANCELLED') ? 'err' : 'ok');
+  if (window.__realtimeRefresh) { try { window.__realtimeRefresh(p); } catch (e) {} }
+  refreshNotifications();
 }

@@ -9,6 +9,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link href="css/styles.css" rel="stylesheet">
+  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
   <div id="nav"></div>
@@ -46,12 +47,16 @@
                 <span class="input-group-text border-0" style="background:var(--surface-2)"><i class="bi bi-search"></i></span>
                 <input id="searchInput" class="form-control" placeholder="Search restaurants or food…" oninput="applyFilters()">
               </div></div>
-              <div class="col-md-4"><select id="filterCuisine" class="form-select" onchange="applyFilters()"><option value="">All cuisines</option></select></div>
-              <div class="col-md-3"><select id="sortBy" class="form-select" onchange="applyFilters()">
+              <div class="col-md-3"><select id="filterCuisine" class="form-select" onchange="applyFilters()"><option value="">All cuisines</option></select></div>
+              <div class="col-md-4"><select id="sortBy" class="form-select" onchange="applyFilters()">
                 <option value="name">Sort: Name</option>
                 <option value="rating">Sort: Rating</option>
                 <option value="minOrder">Sort: Min order</option>
               </select></div>
+            </div>
+            <div class="row g-2 align-center mt-2">
+              <div class="col-md-5"><select id="filterCategory" class="form-select" onchange="applyFilters()"><option value="">All categories</option></select></div>
+              <div class="col-md-4"><button id="offersToggle" type="button" class="btn btn-outline-warning w-100" onclick="toggleOffers()"><i class="bi bi-tag-fill"></i> Offers only</button></div>
             </div>
           </div>
 
@@ -65,6 +70,10 @@
               <span id="restStatus"></span>
             </div></div>
             <div id="foodList" class="food-grid"></div>
+            <div class="card mt-3"><div class="card-body">
+              <h5 class="mb-3"><i class="bi bi-star"></i> Ratings & reviews</h5>
+              <div id="restReviews"></div>
+            </div></div>
           </div>
         </div>
 
@@ -95,14 +104,28 @@
         <div class="modal-header"><h5 class="modal-title">Checkout</h5><button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button></div>
         <div class="modal-body">
           <div id="checkoutAlert"></div>
-          <div class="mb-2"><label class="form-label">City</label><input id="ckCity" class="form-control"></div>
-          <div class="mb-2"><label class="form-label">Street</label><input id="ckStreet" class="form-control"></div>
           <div class="row g-2">
+            <div class="col-md-6"><label class="form-label">City</label><input id="ckCity" class="form-control"></div>
+            <div class="col-md-6"><label class="form-label">Street</label><input id="ckStreet" class="form-control"></div>
+          </div>
+          <div class="row g-2 mt-1">
             <div class="col-6"><label class="form-label">Building</label><input id="ckBuilding" class="form-control"></div>
             <div class="col-6"><label class="form-label">Apartment</label><input id="ckApartment" class="form-control"></div>
           </div>
           <div class="mb-2 mt-2"><label class="form-label">Extra details</label><input id="ckDetails" class="form-control" placeholder="e.g. ring the bell"></div>
           <div class="mb-2"><label class="form-label">Coupon code</label><input id="ckCoupon" class="form-control" placeholder="optional"></div>
+          <div class="mb-2"><label class="form-label">Payment method</label>
+            <select id="ckPayment" class="form-select">
+              <option value="CARD">Card (pay on delivery)</option>
+              <option value="CASH">Cash on delivery</option>
+            </select>
+          </div>
+          <div class="mb-1 d-flex justify-between align-center">
+            <label class="form-label mb-0">Delivery location</label>
+            <button type="button" class="btn btn-sm btn-soft" onclick="useMyLocation()"><i class="bi bi-geo-alt"></i> Use my location</button>
+          </div>
+          <div id="checkoutMap" class="map-picker"></div>
+          <div class="muted small mt-1" id="locHint">Tap the map to drop a pin, or use your current location.</div>
         </div>
         <div class="modal-footer"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-brand" onclick="submitCheckout()">Place Order</button></div>
       </div>
@@ -137,6 +160,22 @@
           <div class="card mb-3"><div class="card-body" id="trackTimeline"></div></div>
           <div id="map" class="map-box"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment modal -->
+  <div class="modal fade" id="payModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Pay order #<span id="payOrderId"></span></h5><button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button></div>
+        <div class="modal-body">
+          <div id="payAlert"></div>
+          <div id="payAmount" class="mb-3 fw-semibold"></div>
+          <div id="payDev" class="alert alert-warning"><i class="bi bi-info-circle"></i> Demo mode: real Stripe key is not configured, so this payment will be simulated.</div>
+          <div id="stripeCard" class="p-3 border rounded" style="display:none"></div>
+        </div>
+        <div class="modal-footer"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button id="payBtn" class="btn-brand" onclick="confirmPayment()">Pay now</button></div>
       </div>
     </div>
   </div>

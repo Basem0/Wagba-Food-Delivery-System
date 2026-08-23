@@ -1,5 +1,6 @@
 package com.wagba.service;
 
+import com.wagba.dto.PageResponse;
 import com.wagba.dto.food.FoodResponse;
 import com.wagba.dto.restaurant.CategoryResponse;
 import com.wagba.dto.restaurant.RestaurantResponse;
@@ -13,8 +14,12 @@ import com.wagba.repository.CategoryRepository;
 import com.wagba.repository.FoodRepository;
 import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.UserRepository;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -50,6 +55,29 @@ public class RestaurantService {
     public List<RestaurantResponse> getApprovedRestaurants() {
         List<Restaurant> restaurants = restaurantRepository.findByStatus(RestaurantStatus.APPROVED);
         return restaurants.stream().map(this::toResponse).toList();
+    }
+
+    public PageResponse<RestaurantResponse> searchRestaurants(String search, Long categoryId, Boolean offers, Pageable pageable) {
+        List<Restaurant> base;
+        if (search != null && !search.isBlank()) {
+            base = restaurantRepository.adminSearch(RestaurantStatus.APPROVED, search.toLowerCase(), pageable).getContent();
+        } else {
+            base = restaurantRepository.findByStatus(RestaurantStatus.APPROVED);
+        }
+        if (categoryId != null) {
+            List<Restaurant> byCat = restaurantRepository.findApprovedByCategory(categoryId);
+            base.retainAll(byCat);
+        }
+        if (Boolean.TRUE.equals(offers)) {
+            List<Restaurant> withOffers = restaurantRepository.findApprovedWithOffers();
+            base.retainAll(withOffers);
+        }
+        int total = base.size();
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), total);
+        List<Restaurant> pageContent = start >= total ? List.of() : base.subList(start, end);
+        List<RestaurantResponse> content = pageContent.stream().map(this::toResponse).toList();
+        return new PageResponse<>(content, pageable.getPageNumber(), pageable.getPageSize(), total, (int) Math.ceil((double) total / pageable.getPageSize()));
     }
 
     public RestaurantResponse getRestaurant(Long id) {
@@ -89,6 +117,9 @@ public class RestaurantService {
         if (request.getEtaMinutes() != null) restaurant.setEtaMinutes(request.getEtaMinutes());
         if (request.getDeliveryFee() != null) restaurant.setDeliveryFee(request.getDeliveryFee());
         if (request.getMinOrderTotal() != null) restaurant.setMinOrderTotal(request.getMinOrderTotal());
+        if (request.getPhone() != null) restaurant.setPhone(request.getPhone());
+        if (request.getLatitude() != null) restaurant.setLatitude(request.getLatitude());
+        if (request.getLongitude() != null) restaurant.setLongitude(request.getLongitude());
 
         restaurantRepository.save(restaurant);
         return toResponse(restaurant);
@@ -151,6 +182,7 @@ public class RestaurantService {
         List<CategoryResponse> categoryResponses = categories.stream()
                 .map(c -> new CategoryResponse(c.getId(), c.getName()))
                 .toList();
+        boolean hasOffers = foodRepository.existsByCategoryRestaurantAndDiscountPriceIsNotNull(restaurant);
         return new RestaurantResponse(
                 restaurant.getId(),
                 restaurant.getName(),
@@ -162,11 +194,18 @@ public class RestaurantService {
                 restaurant.getEtaMinutes(),
                 restaurant.getDeliveryFee(),
                 restaurant.getMinOrderTotal(),
-                restaurant.getAvgRating()
+                restaurant.getAvgRating(),
+                restaurant.getPhone(),
+                restaurant.getLatitude(),
+                restaurant.getLongitude(),
+                hasOffers
         );
     }
 
     private FoodResponse toFoodResponse(Food food) {
+        BigDecimal discount = food.getDiscountPrice();
+        boolean offer = discount != null && discount.compareTo(BigDecimal.ZERO) > 0
+                && discount.compareTo(food.getPrice()) < 0;
         return new FoodResponse(
                 food.getId(),
                 food.getName(),
@@ -175,7 +214,9 @@ public class RestaurantService {
                 food.getImageUrl(),
                 food.isAvailable(),
                 food.getCategory().getId(),
-                food.getCategory().getName()
+                food.getCategory().getName(),
+                food.getDiscountPrice(),
+                offer
         );
     }
 }

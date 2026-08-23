@@ -11,6 +11,9 @@ public class RestaurantUpdateRequest {
     private Integer etaMinutes;
     private BigDecimal deliveryFee;
     private BigDecimal minOrderTotal;
+    private String phone;
+    private Double latitude;
+    private Double longitude;
 
     public String getName() {
         return name;
@@ -66,5 +69,29 @@ public class RestaurantUpdateRequest {
 
     public void setMinOrderTotal(BigDecimal minOrderTotal) {
         this.minOrderTotal = minOrderTotal;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 }

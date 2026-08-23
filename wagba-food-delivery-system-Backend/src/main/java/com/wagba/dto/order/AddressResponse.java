@@ -6,6 +6,8 @@ public record AddressResponse(
         String street,
         String buildingNumber,
         String apartment,
-        String details
+        String details,
+        Double latitude,
+        Double longitude
 ) {
 }

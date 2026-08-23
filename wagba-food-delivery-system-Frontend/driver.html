@@ -19,6 +19,8 @@
       <a class="side-link active" data-view="dashboard" onclick="navTo('dashboard')"><i class="bi bi-grid-1x2"></i> Dashboard</a>
       <a class="side-link" data-view="available" onclick="navTo('available')"><i class="bi bi-inboxes"></i> Available</a>
       <a class="side-link" data-view="mine" onclick="navTo('mine')"><i class="bi bi-bag-check"></i> My Deliveries</a>
+      <a class="side-link" data-view="profile" onclick="navTo('profile')"><i class="bi bi-person-gear"></i> Profile</a>
+      <a class="side-link" data-view="earnings" onclick="navTo('earnings')"><i class="bi bi-wallet2"></i> Earnings</a>
       <div class="side-foot">Hit the road and earn.</div>
     </aside>
 
@@ -47,6 +49,34 @@
         </div>
         <div id="view-mine" class="view d-none">
           <div id="mineList" class="row g-3"></div>
+        </div>
+
+        <!-- PROFILE -->
+        <div id="view-profile" class="view d-none">
+          <div class="card"><div class="card-body">
+            <h5 class="mb-3"><i class="bi bi-person-gear"></i> Driver profile</h5>
+            <div id="driverProfileAlert"></div>
+            <div class="row g-2">
+              <div class="col-md-6"><label class="form-label">Phone</label><input id="dpPhone" class="form-control"></div>
+              <div class="col-md-6"><label class="form-label">National ID</label><input id="dpNat" class="form-control"></div>
+              <div class="col-md-6"><label class="form-label">Vehicle Type</label><input id="dpVType" class="form-control" placeholder="Motorcycle"></div>
+              <div class="col-md-6"><label class="form-label">Vehicle Number</label><input id="dpVNum" class="form-control"></div>
+              <div class="col-md-6"><label class="form-label">License Number</label><input id="dpLic" class="form-control"></div>
+            </div>
+            <div class="mt-3"><button class="btn-brand" onclick="saveDriverProfile()"><i class="bi bi-check-lg"></i> Save profile</button></div>
+          </div></div>
+        </div>
+
+        <!-- EARNINGS -->
+        <div id="view-earnings" class="view d-none">
+          <div id="driverWalletCard" class="card mb-3"><div class="card-body d-flex align-center gap-3">
+            <div class="logo-mark" style="width:54px;height:54px;font-size:1.4rem;background:var(--gradient);color:#fff;border-radius:14px;display:grid;place-items:center"><i class="bi bi-wallet2"></i></div>
+            <div><div class="muted small">Wallet balance</div><div class="h3 mb-0 gradient-text" id="driverWalletBalance">—</div></div>
+          </div></div>
+          <div class="card"><div class="card-body">
+            <h5 class="mb-3"><i class="bi bi-receipt"></i> Wallet transactions</h5>
+            <div id="driverWalletTxns" class="scroll-x"><div class="muted small">Loading…</div></div>
+          </div></div>
         </div>
       </div>
     </div>

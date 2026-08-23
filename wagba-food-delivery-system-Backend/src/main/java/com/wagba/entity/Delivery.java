@@ -4,6 +4,7 @@ import com.wagba.entity.enums.DeliveryStatus;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,6 +32,12 @@ public class Delivery {
     private LocalDateTime pickedUpAt;
 
     private LocalDateTime deliveredAt;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal fee;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal earning;
 
     // Getters & Setters
 
@@ -88,5 +95,21 @@ public class Delivery {
 
     public void setDeliveredAt(LocalDateTime deliveredAt) {
         this.deliveredAt = deliveredAt;
+    }
+
+    public BigDecimal getFee() {
+        return fee;
+    }
+
+    public void setFee(BigDecimal fee) {
+        this.fee = fee;
+    }
+
+    public BigDecimal getEarning() {
+        return earning;
+    }
+
+    public void setEarning(BigDecimal earning) {
+        this.earning = earning;
     }
 }

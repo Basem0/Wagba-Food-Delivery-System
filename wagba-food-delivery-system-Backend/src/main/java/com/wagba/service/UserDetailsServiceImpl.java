@@ -25,6 +25,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 		User user = userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException("User not found"));
 		
+		if (user.getStatus() == com.wagba.entity.enums.UserStatus.SUSPENDED
+				|| user.getStatus() == com.wagba.entity.enums.UserStatus.REJECTED) {
+			throw new UsernameNotFoundException("User is not allowed to log in");
+		}
+		
 		GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
 		
 		return new org.springframework.security.core.userdetails.User(

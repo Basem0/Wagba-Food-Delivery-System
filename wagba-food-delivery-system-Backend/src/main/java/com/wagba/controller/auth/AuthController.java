@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.wagba.dto.auth.LoginRequest;
 import com.wagba.dto.auth.RegisterRequest;
+import com.wagba.dto.user.UserProfileRequest;
 import com.wagba.entity.User;
 import com.wagba.entity.enums.UserRole;
 import com.wagba.repository.UserRepository;
@@ -121,6 +122,25 @@ public class AuthController {
         result.put("email", user.getEmail());
         result.put("role", user.getRole().name());
         result.put("status", user.getStatus().name());
+        result.put("phone", user.getPhone());
+        return result;
+    }
+
+    @PutMapping("/me")
+    public Map<String, Object> updateProfile(@RequestBody UserProfileRequest request) {
+        String email = SecurityUtil.getCurrentUserEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (request.getName() != null && !request.getName().isBlank()) user.setName(request.getName());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        userRepository.save(user);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", user.getId());
+        result.put("name", user.getName());
+        result.put("email", user.getEmail());
+        result.put("role", user.getRole().name());
+        result.put("status", user.getStatus().name());
+        result.put("phone", user.getPhone());
         return result;
     }
 }

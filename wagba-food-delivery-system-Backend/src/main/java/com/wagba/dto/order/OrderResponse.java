@@ -14,6 +14,11 @@ public record OrderResponse(
         AddressResponse deliveryAddress,
         List<OrderItemResponse> items,
         String deliveryStatus,
-        String createdAt
+        String createdAt,
+        String customerName,
+        Double customerLatitude,
+        Double customerLongitude,
+        boolean reviewed,
+        String paymentMethod
 ) {
 }

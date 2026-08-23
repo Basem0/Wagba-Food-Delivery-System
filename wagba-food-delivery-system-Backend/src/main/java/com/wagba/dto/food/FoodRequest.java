@@ -9,6 +9,7 @@ public class FoodRequest {
     private BigDecimal price;
     private String imageUrl;
     private Long categoryId;
+    private BigDecimal discountPrice;
 
     public String getName() {
         return name;
@@ -48,5 +49,13 @@ public class FoodRequest {
 
     public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public BigDecimal getDiscountPrice() {
+        return discountPrice;
+    }
+
+    public void setDiscountPrice(BigDecimal discountPrice) {
+        this.discountPrice = discountPrice;
     }
 }

@@ -48,6 +48,17 @@
   </div>
 </header>
 
+<!-- Stats strip -->
+<section class="stats-strip">
+  <div class="wrap">
+    <div class="stat"><div class="num">1.2k+</div><div class="lbl">Restaurants</div></div>
+    <div class="stat"><div class="num">800+</div><div class="lbl">Couriers</div></div>
+    <div class="stat"><div class="num">25</div><div class="lbl">Cities</div></div>
+    <div class="stat"><div class="num">4.8★</div><div class="lbl">Avg rating</div></div>
+    <div class="stat"><div class="num">20 min</div><div class="lbl">Avg delivery</div></div>
+  </div>
+</section>
+
 <!-- Features -->
 <section class="section" id="features">
   <h2>Built for everyone at the table</h2>
@@ -119,6 +130,39 @@
       <h4>Admin</h4>
       <p>Approve restaurants & drivers, manage users and launch coupons.</p>
     </div>
+  </div>
+</section>
+
+<!-- Featured restaurants (loaded from API) -->
+<section class="section" id="featured">
+  <div class="d-flex justify-between align-center mb-3">
+    <div><h2>Popular near you</h2><p class="lead-c">Hand-picked kitchens our customers love right now.</p></div>
+    <button class="btn-brand" onclick="openAuth('register')"><i class="bi bi-compass"></i> Explore all</button>
+  </div>
+  <div id="featuredList" class="rest-grid"></div>
+</section>
+
+<!-- Testimonials -->
+<section class="section" style="background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <h2>Loved by food lovers</h2>
+  <p class="lead-c">Real words from hungry customers and busy kitchens.</p>
+  <div class="feat-grid">
+    <div class="feat"><div class="quote">“Wagba made our small kitchen visible. Orders doubled in a month.”</div><div class="who"><b>Mariam</b> · Restaurant owner</div></div>
+    <div class="feat"><div class="quote">“I track my driver live and the food always arrives hot. Game changer.”</div><div class="who"><b>Omar</b> · Customer</div></div>
+    <div class="feat"><div class="quote">“Flexible hours, fair pay, and the map makes every drop-off easy.”</div><div class="who"><b>Youssef</b> · Driver</div></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section">
+  <h2>Questions, answered</h2>
+  <p class="lead-c">Everything you need to know before your first order.</p>
+  <div class="faq">
+    <details open><summary>How fast is delivery?</summary><div>Most orders arrive in 20–35 minutes. You can watch your driver move on a live map in real time.</div></details>
+    <details><summary>Which payment methods are supported?</summary><div>We support secure card payments via Stripe, with a demo mode for testing. Coupons are applied at checkout.</div></details>
+    <details><summary>Can I become a driver?</summary><div>Yes! Sign up, complete your vehicle profile, get approved by an admin, and start accepting deliveries near you.</div></details>
+    <details><summary>How do restaurants join?</summary><div>Open a restaurant account, add your menu and storefront details, and an admin approves your profile before you go live.</div></details>
+    <details><summary>Is there an app?</summary><div>Wagba runs beautifully in your browser on phone and desktop — no install needed.</div></details>
   </div>
 </section>
 
@@ -211,6 +255,34 @@
 <script src="js/common.js"></script>
 <script>
   let _pendingEmail = '';
+  // ---- featured restaurants (public) ----
+  (async function loadFeatured() {
+    const el = document.getElementById('featuredList');
+    if (!el) return;
+    try {
+      const page = await api('/restaurants?page=0&size=6');
+      const list = page.content || [];
+      if (!list.length) { el.innerHTML = '<p class="muted">No restaurants yet — be the first to join!</p>'; return; }
+      el.innerHTML = list.map(r => `
+        <div class="rest-card" onclick="openAuth('register')">
+          <div class="cover">${r.imageUrl ? `<img src="${escapeHtml(r.imageUrl)}" onerror="onImgError(this,'${escapeHtml(r.name)}')">` : `<i class="bi bi-shop"></i>`}</div>
+          <div class="body">
+            <div class="d-flex justify-between align-center">
+              <div class="name">${escapeHtml(r.name)}</div>
+              ${r.avgRating ? `<span class="small fw-semibold"><i class="bi bi-star-fill text-warning"></i> ${r.avgRating}</span>` : ''}
+            </div>
+            <div class="desc muted small text-truncate">${escapeHtml(r.description || 'Delicious food, delivered fast')}</div>
+            <div class="meta">
+              ${r.cuisine ? `<span><i class="bi bi-tags"></i> ${escapeHtml(r.cuisine)}</span>` : ''}
+              ${r.deliveryFee != null ? `<span><i class="bi bi-bicycle"></i> ${money(r.deliveryFee)}</span>` : ''}
+              ${r.minOrderTotal ? `<span><i class="bi bi-bag"></i> min ${money(r.minOrderTotal)}</span>` : ''}
+            </div>
+            <div class="mt-2">${r.status ? statusBadge(r.status.name || r.status) : ''}</div>
+          </div>
+        </div>`).join('');
+    } catch (e) { el.innerHTML = '<p class="muted">Could not load restaurants right now.</p>'; }
+  })();
+
   function openAuth(tab) { setAuthTab(tab || 'login'); new bootstrap.Modal(document.getElementById('authModal')).show(); }
   function setAuthTab(tab) {
     ['login','register','verify','forgot'].forEach(t => document.getElementById(t+'View').classList.toggle('d-none', t!==tab));

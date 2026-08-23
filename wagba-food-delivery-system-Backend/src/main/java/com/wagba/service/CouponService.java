@@ -71,6 +71,10 @@ public class CouponService {
         return userCouponRepository.findByUser(user).stream().map(this::toUserCouponResponse).toList();
     }
 
+    public List<CouponResponse> listCoupons() {
+        return couponRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
     public BigDecimal applyCoupon(String code, User user, BigDecimal subtotal) {
         Coupon coupon = couponRepository.findByCode(code)
                 .orElseThrow(() -> new RuntimeException("Coupon not found"));

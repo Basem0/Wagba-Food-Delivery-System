@@ -24,7 +24,7 @@ public class CartController {
         return cartService.addItem(SecurityUtil.getCurrentUserEmail(), request);
     }
 
-    @GetMapping
+    @GetMapping("/items")
     public CartResponse getCart() {
         return cartService.getCart(SecurityUtil.getCurrentUserEmail());
     }

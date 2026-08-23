@@ -9,4 +9,6 @@ import java.util.List;
 public interface FoodRepository extends JpaRepository<Food, Long>  {
 
     List<Food> findByCategoryRestaurant(Restaurant restaurant);
+
+    boolean existsByCategoryRestaurantAndDiscountPriceIsNotNull(Restaurant restaurant);
 }

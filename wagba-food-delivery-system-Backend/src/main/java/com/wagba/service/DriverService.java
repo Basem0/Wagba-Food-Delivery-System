@@ -1,6 +1,7 @@
 package com.wagba.service;
 
 import com.wagba.dto.driver.DriverProfileRequest;
+import com.wagba.dto.driver.DriverResponse;
 import com.wagba.entity.Driver;
 import com.wagba.entity.User;
 import com.wagba.entity.enums.OnboardingStatus;
@@ -95,6 +96,37 @@ public class DriverService {
         driver.setLatitude(latitude);
         driver.setLongitude(longitude);
         driver.setLocationUpdatedAt(LocalDateTime.now());
+        driverRepository.save(driver);
+    }
+
+    public DriverResponse getDriverProfile(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Driver driver = driverRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Driver profile not found"));
+        return new DriverResponse(
+                driver.getId(),
+                driver.getPhoneNumber(),
+                driver.getNationalId(),
+                driver.getVehicleType(),
+                driver.getVehicleNumber(),
+                driver.getLicenseNumber(),
+                driver.getLatitude(),
+                driver.getLongitude()
+        );
+    }
+
+    @Transactional
+    public void updateDriverProfile(String email, DriverProfileRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Driver driver = driverRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Driver profile not found"));
+        if (request.getPhoneNumber() != null) driver.setPhoneNumber(request.getPhoneNumber());
+        if (request.getNationalId() != null) driver.setNationalId(request.getNationalId());
+        if (request.getVehicleType() != null) driver.setVehicleType(request.getVehicleType());
+        if (request.getVehicleNumber() != null) driver.setVehicleNumber(request.getVehicleNumber());
+        if (request.getLicenseNumber() != null) driver.setLicenseNumber(request.getLicenseNumber());
         driverRepository.save(driver);
     }
 }

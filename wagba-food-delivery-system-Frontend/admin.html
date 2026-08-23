@@ -46,19 +46,22 @@
 
         <div id="view-restaurants" class="view d-none">
           <div class="card p-3 mb-3"><div class="row g-2 align-center">
-            <div class="col-md-4"><select id="restFilter" class="form-select" onchange="loadRestaurants()"><option value="PENDING">Pending approval</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option><option value="">All</option></select></div>
+            <div class="col-md-3"><select id="restFilter" class="form-select" onchange="loadRestaurants()"><option value="PENDING">Pending approval</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option><option value="SUSPENDED">Suspended</option><option value="INACTIVE">Inactive</option><option value="">All</option></select></div>
+            <div class="col-md-6"><input id="restSearch" class="form-control" placeholder="Search by name or cuisine…" oninput="loadRestaurants()"></div>
           </div></div>
           <div id="restList" class="row g-3"></div>
         </div>
 
         <div id="view-drivers" class="view d-none">
           <div class="card p-3 mb-3"><div class="row g-2 align-center">
-            <div class="col-md-4"><select id="drvFilter" class="form-select" onchange="loadDrivers()"><option value="PENDING">Pending approval</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option><option value="">All</option></select></div>
+            <div class="col-md-3"><select id="drvFilter" class="form-select" onchange="loadDrivers()"><option value="PENDING">Pending approval</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option><option value="SUSPENDED">Suspended</option><option value="INACTIVE">Inactive</option><option value="">All</option></select></div>
+            <div class="col-md-6"><input id="drvSearch" class="form-control" placeholder="Search by name or email…" oninput="loadDrivers()"></div>
           </div></div>
           <div id="driverList" class="row g-3"></div>
         </div>
 
         <div id="view-users" class="view d-none">
+          <div class="card p-3 mb-3"><input id="userSearch" class="form-control" placeholder="Search users by name or email…" oninput="loadUsers()"></div>
           <div class="card"><div class="card-body"><div class="scroll-x"><table class="table wagba"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead><tbody id="userRows"></tbody></table></div></div></div>
         </div>
 
@@ -87,6 +90,10 @@
               <button class="btn-brand mt-2" onclick="assignCoupon()">Assign</button>
             </div></div></div>
           </div>
+          <div class="card mt-3"><div class="card-body">
+            <h5>Coupons</h5>
+            <div id="couponList" class="row g-2"></div>
+          </div></div>
         </div>
       </div>
     </div>

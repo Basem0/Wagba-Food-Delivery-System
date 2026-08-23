@@ -6,5 +6,6 @@ public enum RestaurantStatus {
     APPROVED,
     REJECTED,
     ACTIVE,
-    INACTIVE
+    INACTIVE,
+    SUSPENDED
 }

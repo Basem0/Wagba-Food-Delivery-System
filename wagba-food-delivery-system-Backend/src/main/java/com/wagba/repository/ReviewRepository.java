@@ -17,4 +17,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByOrderRestaurant(Restaurant restaurant);
 
     List<Review> findByOrderIn(List<Order> orders);
+
+    boolean existsByOrderId(Long orderId);
 }

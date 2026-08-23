@@ -16,6 +16,10 @@ public record RestaurantResponse(
         Integer etaMinutes,
         BigDecimal deliveryFee,
         BigDecimal minOrderTotal,
-        Double avgRating
+        Double avgRating,
+        String phone,
+        Double latitude,
+        Double longitude,
+        boolean hasOffers
 ) {
 }

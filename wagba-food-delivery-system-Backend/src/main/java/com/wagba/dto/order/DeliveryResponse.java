@@ -7,6 +7,8 @@ public record DeliveryResponse(
         Long driverId,
         String acceptedAt,
         String pickedUpAt,
-        String deliveredAt
+        String deliveredAt,
+        java.math.BigDecimal fee,
+        java.math.BigDecimal earning
 ) {
 }

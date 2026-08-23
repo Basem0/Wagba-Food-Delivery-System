@@ -12,6 +12,7 @@ import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -80,6 +81,7 @@ public class FoodService {
         if (request.getDescription() != null) food.setDescription(request.getDescription());
         if (request.getPrice() != null) food.setPrice(request.getPrice());
         if (request.getImageUrl() != null) food.setImageUrl(request.getImageUrl());
+        if (request.getDiscountPrice() != null) food.setDiscountPrice(request.getDiscountPrice());
         if (request.getCategoryId() != null) {
             Category category = getOwnCategory(owner, request.getCategoryId());
             food.setCategory(category);
@@ -110,6 +112,9 @@ public class FoodService {
     }
 
     private FoodResponse toResponse(Food food) {
+        BigDecimal discount = food.getDiscountPrice();
+        boolean offer = discount != null && discount.compareTo(BigDecimal.ZERO) > 0
+                && discount.compareTo(food.getPrice()) < 0;
         return new FoodResponse(
                 food.getId(),
                 food.getName(),
@@ -118,7 +123,9 @@ public class FoodService {
                 food.getImageUrl(),
                 food.isAvailable(),
                 food.getCategory().getId(),
-                food.getCategory().getName()
+                food.getCategory().getName(),
+                food.getDiscountPrice(),
+                offer
         );
     }
 }

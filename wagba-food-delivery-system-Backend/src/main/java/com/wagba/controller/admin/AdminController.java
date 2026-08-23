@@ -1,5 +1,7 @@
 package com.wagba.controller.admin;
 
+import com.wagba.dto.PageResponse;
+import com.wagba.dto.restaurant.RestaurantUpdateRequest;
 import com.wagba.entity.Restaurant;
 import com.wagba.entity.User;
 import com.wagba.entity.enums.RestaurantStatus;
@@ -8,6 +10,9 @@ import com.wagba.entity.enums.UserStatus;
 import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.UserRepository;
 import com.wagba.service.AdminService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -46,6 +51,18 @@ public class AdminController {
         return ResponseEntity.ok("Driver rejected");
     }
 
+    @PostMapping("/drivers/{driverId}/ban")
+    public ResponseEntity<String> banDriver(@PathVariable Long driverId) {
+        adminService.banDriver(driverId);
+        return ResponseEntity.ok("Driver banned");
+    }
+
+    @PostMapping("/drivers/{driverId}/unban")
+    public ResponseEntity<String> unbanDriver(@PathVariable Long driverId) {
+        adminService.unbanDriver(driverId);
+        return ResponseEntity.ok("Driver unbanned");
+    }
+
     @PostMapping("/restaurants/{restaurantId}/approve")
     public ResponseEntity<String> approveRestaurant(@PathVariable Long restaurantId) {
         adminService.approveRestaurant(restaurantId);
@@ -58,27 +75,85 @@ public class AdminController {
         return ResponseEntity.ok("Restaurant rejected");
     }
 
+    @PostMapping("/restaurants/{restaurantId}/suspend")
+    public ResponseEntity<String> suspendRestaurant(@PathVariable Long restaurantId) {
+        adminService.suspendRestaurant(restaurantId);
+        return ResponseEntity.ok("Restaurant suspended");
+    }
+
+    @PostMapping("/restaurants/{restaurantId}/activate")
+    public ResponseEntity<String> activateRestaurant(@PathVariable Long restaurantId) {
+        adminService.activateRestaurant(restaurantId);
+        return ResponseEntity.ok("Restaurant activated");
+    }
+
+    @PutMapping("/restaurants/{restaurantId}")
+    public ResponseEntity<String> editRestaurant(@PathVariable Long restaurantId,
+                                                @RequestBody RestaurantUpdateRequest request) {
+        adminService.editRestaurant(restaurantId, request);
+        return ResponseEntity.ok("Restaurant updated");
+    }
+
+    @DeleteMapping("/restaurants/{restaurantId}")
+    public ResponseEntity<String> deleteRestaurant(@PathVariable Long restaurantId) {
+        adminService.deleteRestaurant(restaurantId);
+        return ResponseEntity.ok("Restaurant deleted");
+    }
+
+    @PostMapping("/users/{userId}/suspend")
+    public ResponseEntity<String> suspendUser(@PathVariable Long userId) {
+        adminService.suspendUser(userId);
+        return ResponseEntity.ok("User suspended");
+    }
+
+    @PostMapping("/users/{userId}/activate")
+    public ResponseEntity<String> activateUser(@PathVariable Long userId) {
+        adminService.activateUser(userId);
+        return ResponseEntity.ok("User activated");
+    }
+
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<String> deleteUser(@PathVariable Long userId) {
+        adminService.deleteUser(userId);
+        return ResponseEntity.ok("User deleted");
+    }
+
     @GetMapping("/restaurants")
-    public List<Map<String, Object>> listRestaurants(@RequestParam(required = false) RestaurantStatus status) {
-        List<Restaurant> list = (status == null)
-                ? restaurantRepository.findAll()
-                : restaurantRepository.findByStatus(status);
-        return list.stream().map(r -> {
+    public PageResponse<Map<String, Object>> listRestaurants(@RequestParam(required = false) RestaurantStatus status,
+                                                            @RequestParam(required = false) String search,
+                                                            @RequestParam(defaultValue = "0") int page,
+                                                            @RequestParam(defaultValue = "20") int size) {
+        Pageable pg = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        Page<Restaurant> p = (search != null && !search.isBlank())
+                ? restaurantRepository.adminSearch(status, search.toLowerCase(), pg)
+                : (status != null ? restaurantRepository.findByStatus(status, pg) : restaurantRepository.findAll(pg));
+        List<Map<String, Object>> content = p.getContent().stream().map(r -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", r.getId());
             m.put("name", r.getName());
             m.put("status", r.getStatus().name());
             m.put("ownerEmail", r.getOwner() != null ? r.getOwner().getEmail() : null);
+            m.put("cuisine", r.getCuisine());
             return m;
         }).collect(Collectors.toList());
+        return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
     }
 
     @GetMapping("/drivers")
-    public List<Map<String, Object>> listDrivers(@RequestParam(required = false) UserStatus status) {
-        List<User> list = (status == null)
-                ? userRepository.findByRole(UserRole.DRIVER)
-                : userRepository.findByRoleAndStatus(UserRole.DRIVER, status);
-        return list.stream().map(u -> {
+    public PageResponse<Map<String, Object>> listDrivers(@RequestParam(required = false) UserStatus status,
+                                                        @RequestParam(required = false) String search,
+                                                        @RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "20") int size) {
+        Pageable pg = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        Page<User> p;
+        if (search != null && !search.isBlank()) {
+            p = userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, pg);
+        } else if (status != null) {
+            p = userRepository.findByRoleAndStatus(UserRole.DRIVER, status, pg);
+        } else {
+            p = userRepository.findByRole(UserRole.DRIVER, pg);
+        }
+        List<Map<String, Object>> content = p.getContent().stream().map(u -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", u.getId());
             m.put("name", u.getName());
@@ -86,14 +161,24 @@ public class AdminController {
             m.put("status", u.getStatus().name());
             return m;
         }).collect(Collectors.toList());
+        return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
     }
 
     @GetMapping("/users")
-    public List<Map<String, Object>> listUsers(@RequestParam(required = false) UserRole role) {
-        List<User> list = (role == null)
-                ? userRepository.findAll()
-                : userRepository.findByRole(role);
-        return list.stream().map(u -> {
+    public PageResponse<Map<String, Object>> listUsers(@RequestParam(required = false) UserRole role,
+                                                      @RequestParam(required = false) String search,
+                                                      @RequestParam(defaultValue = "0") int page,
+                                                      @RequestParam(defaultValue = "20") int size) {
+        Pageable pg = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        Page<User> p;
+        if (search != null && !search.isBlank()) {
+            p = userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, pg);
+        } else if (role != null) {
+            p = userRepository.findByRole(role, pg);
+        } else {
+            p = userRepository.findAll(pg);
+        }
+        List<Map<String, Object>> content = p.getContent().stream().map(u -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", u.getId());
             m.put("name", u.getName());
@@ -102,5 +187,6 @@ public class AdminController {
             m.put("status", u.getStatus().name());
             return m;
         }).collect(Collectors.toList());
+        return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
     }
 }

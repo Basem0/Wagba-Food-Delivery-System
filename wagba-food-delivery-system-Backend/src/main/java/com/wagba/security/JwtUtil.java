@@ -38,6 +38,10 @@ public class JwtUtil {
         return parseClaims(token).getSubject();
     }
 
+    public String extractRole(String token) {
+        return parseClaims(token).get("role", String.class);
+    }
+
     public String extractJti(String token) {
         return parseClaims(token).getId();
     }

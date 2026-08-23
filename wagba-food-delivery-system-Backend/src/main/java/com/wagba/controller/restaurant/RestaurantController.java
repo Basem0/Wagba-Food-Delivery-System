@@ -1,9 +1,12 @@
 package com.wagba.controller.restaurant;
 
+import com.wagba.dto.PageResponse;
 import com.wagba.dto.food.FoodResponse;
 import com.wagba.dto.restaurant.CategoryResponse;
 import com.wagba.dto.restaurant.RestaurantResponse;
 import com.wagba.service.RestaurantService;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,8 +23,14 @@ public class RestaurantController {
     }
 
     @GetMapping
-    public List<RestaurantResponse> listRestaurants() {
-        return restaurantService.getApprovedRestaurants();
+    public PageResponse<RestaurantResponse> listRestaurants(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Boolean offers,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        return restaurantService.searchRestaurants(search, categoryId, offers, pageable);
     }
 
     @GetMapping("/{id}")

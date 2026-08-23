@@ -7,10 +7,12 @@ import com.wagba.repository.OrderRepository;
 import com.wagba.repository.UserRepository;
 import com.wagba.security.SecurityUtil;
 import com.wagba.service.StripeService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -22,12 +24,27 @@ public class PaymentController {
     private final UserRepository userRepository;
     private final StripeService stripeService;
 
+    @Value("${stripe.api.key:}")
+    private String stripeApiKey;
+
+    @Value("${stripe.publishable.key:}")
+    private String stripePublishableKey;
+
     public PaymentController(OrderRepository orderRepository,
                              UserRepository userRepository,
                              StripeService stripeService) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.stripeService = stripeService;
+    }
+
+    @GetMapping("/config")
+    public Map<String, Object> config() {
+        boolean devMode = stripeApiKey == null || stripeApiKey.isBlank();
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("publishableKey", devMode ? "" : stripePublishableKey);
+        res.put("devMode", devMode);
+        return res;
     }
 
     @PostMapping("/create-intent")

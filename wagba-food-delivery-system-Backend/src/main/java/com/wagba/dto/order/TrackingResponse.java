@@ -6,6 +6,8 @@ public record TrackingResponse(
         String deliveryStatus,
         String restaurantName,
         DriverTrackingInfo driver,
-        String createdAt
+        String createdAt,
+        Double customerLatitude,
+        Double customerLongitude
 ) {
 }

@@ -1,6 +1,7 @@
 package com.wagba.entity;
 
 import com.wagba.entity.enums.OrderStatus;
+import com.wagba.entity.enums.PaymentMethod;
 
 import jakarta.persistence.*;
 
@@ -27,7 +28,14 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    private PaymentMethod paymentMethod = PaymentMethod.CARD;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private OrderStatus status = OrderStatus.PENDING;
+
+    private Double customerLatitude;
+    private Double customerLongitude;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
@@ -88,6 +96,30 @@ public class Order {
 
     public void setCouponCode(String couponCode) {
         this.couponCode = couponCode;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public Double getCustomerLatitude() {
+        return customerLatitude;
+    }
+
+    public void setCustomerLatitude(Double customerLatitude) {
+        this.customerLatitude = customerLatitude;
+    }
+
+    public Double getCustomerLongitude() {
+        return customerLongitude;
+    }
+
+    public void setCustomerLongitude(Double customerLongitude) {
+        this.customerLongitude = customerLongitude;
     }
 
     public OrderStatus getStatus() {

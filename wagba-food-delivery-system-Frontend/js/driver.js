@@ -5,9 +5,16 @@ function init() {
   window.VIEWS = {
     dashboard: { title: 'Dashboard', sub: 'Your delivery overview' },
     available: { title: 'Available deliveries', sub: 'Pick up an order near you' },
-    mine: { title: 'My Deliveries', sub: 'Track your active & past deliveries' }
+    mine: { title: 'My Deliveries', sub: 'Track your active & past deliveries' },
+    profile: { title: 'Profile', sub: 'Your driver details' },
+    earnings: { title: 'Earnings', sub: 'Wallet & payouts' }
   };
-  window.onNav = (v) => { if (v === 'available') loadAvailable(); if (v === 'mine') loadMine(); };
+  window.onNav = (v) => { if (v === 'available') loadAvailable(); if (v === 'mine') loadMine(); if (v === 'profile') loadDriverProfile(); if (v === 'earnings') loadDriverEarnings(); };
+  window.__realtimeRefresh = (p) => {
+    renderDashboard();
+    if (p && (p.type === 'AVAILABLE' || p.type === 'NEW_DELIVERY')) loadAvailable();
+    loadMine();
+  };
   api('/driver/deliveries').then(() => {
     document.getElementById('profileBox').innerHTML = '';
     navTo('dashboard'); renderDashboard();
@@ -45,7 +52,9 @@ async function submitProfile() {
 
 async function renderDashboard() {
   try {
-    const [avail, mine] = await Promise.all([api('/driver/deliveries/available'), api('/driver/deliveries')]);
+    const [ap, mn] = await Promise.all([api('/driver/deliveries/available?page=0&size=100'), api('/driver/deliveries?page=0&size=100')]);
+    const avail = ap.content || [];
+    const mine = mn.content || [];
     const active = mine.filter(d => ['ACCEPTED','PICKED_UP','OUT_FOR_DELIVERY'].includes(d.status));
     const done = mine.filter(d => d.status === 'DELIVERED');
     const earnings = done.reduce((s, d) => s + (d.earning || d.fee || 0), 0);
@@ -60,10 +69,12 @@ function statCard(icon, label, val, cls) {
   return `<div class="col-6 col-lg-3"><div class="stat-card ${cls}"><div class="ic"><i class="bi bi-${icon}"></i></div><div class="label">${label}</div><div class="val">${val}</div></div></div>`;
 }
 
-function deliveryCard(d, withActions) {
+function deliveryCard(d, withActions, locked) {
   let actions = '';
   if (withActions) {
-    if (d.status === 'AVAILABLE') actions = `<button class="btn btn-sm btn-brand" onclick="actDelivery(${d.id},'accept','available')">Accept</button>`;
+    if (d.status === 'AVAILABLE') actions = locked
+      ? `<button class="btn btn-sm btn-secondary" disabled>Complete current delivery first</button>`
+      : `<button class="btn btn-sm btn-brand" onclick="actDelivery(${d.id},'accept','available')">Accept</button>`;
     else if (d.status === 'ACCEPTED') actions = `<button class="btn btn-sm btn-brand" onclick="actDelivery(${d.id},'pickup','mine')">Pick Up</button>`;
     else if (d.status === 'PICKED_UP' || d.status === 'OUT_FOR_DELIVERY') actions = `<button class="btn btn-sm btn-brand" onclick="actDelivery(${d.id},'deliver','mine')">Deliver</button>`;
     else actions = `<span class="muted small">${d.status}</span>`;
@@ -90,15 +101,26 @@ function deliveryCard(d, withActions) {
 
 async function loadAvailable() {
   try {
-    const list = await api('/driver/deliveries/available');
+    const [ap, mn] = await Promise.all([
+      api('/driver/deliveries/available?page=0&size=100'),
+      api('/driver/deliveries?page=0&size=100')
+    ]);
+    const list = ap.content || [];
+    const mine = mn.content || [];
+    const hasActive = mine.some(d => ['ACCEPTED', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(d.status));
     const el = document.getElementById('availList');
+    if (hasActive) {
+      el.innerHTML = `<div class="col-12"><div class="alert alert-info d-flex align-center gap-2"><i class="bi bi-info-circle"></i> You already have an active delivery. Complete it before accepting another one.</div></div>`;
+      return;
+    }
     if (!list.length) { el.innerHTML = emptyState('bi-emoji-smile', 'No available deliveries', 'Check back soon — new orders appear here.'); return; }
-    el.innerHTML = list.map(d => deliveryCard(d, true)).join('');
+    el.innerHTML = list.map(d => deliveryCard(d, true, hasActive)).join('');
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 async function loadMine() {
   try {
-    const list = await api('/driver/deliveries');
+    const page = await api('/driver/deliveries?page=0&size=100');
+    const list = page.content || [];
     const el = document.getElementById('mineList');
     if (!list.length) { el.innerHTML = emptyState('bi-inbox', 'No deliveries yet', 'Accept an available delivery to get started.'); return; }
     el.innerHTML = list.map(d => deliveryCard(d, true)).join('');
@@ -140,6 +162,46 @@ function toggleLiveLocation() {
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
   );
 }
+// ---------- Profile view ----------
+async function loadDriverProfile() {
+  try {
+    const d = await api('/driver/profile');
+    document.getElementById('dpPhone').value = d.phoneNumber || '';
+    document.getElementById('dpNat').value = d.nationalId || '';
+    document.getElementById('dpVType').value = d.vehicleType || '';
+    document.getElementById('dpVNum').value = d.vehicleNumber || '';
+    document.getElementById('dpLic').value = d.licenseNumber || '';
+  } catch (e) { showAlert('driverProfileAlert', 'danger', e.message); }
+}
+async function saveDriverProfile() {
+  clearAlert('driverProfileAlert');
+  const body = {
+    phoneNumber: document.getElementById('dpPhone').value,
+    nationalId: document.getElementById('dpNat').value,
+    vehicleType: document.getElementById('dpVType').value,
+    vehicleNumber: document.getElementById('dpVNum').value,
+    licenseNumber: document.getElementById('dpLic').value
+  };
+  try {
+    await api('/driver/profile', 'PUT', body);
+    toast('Saved', 'Driver profile updated');
+  } catch (e) { showAlert('driverProfileAlert', 'danger', e.message); }
+}
+
+// ---------- Earnings / Wallet ----------
+async function loadDriverEarnings() {
+  try {
+    const w = await api('/driver/wallet');
+    document.getElementById('driverWalletBalance').textContent = money(w.balance != null ? w.balance : 0);
+    const txns = w.transactions || [];
+    document.getElementById('driverWalletTxns').innerHTML = txns.length
+      ? `<table class="table wagba"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th class="text-end">Amount</th></tr></thead><tbody>`
+        + txns.map(t => `<tr><td>${fmtDateTime(t.createdAt)}</td><td>${t.type}</td><td>${escapeHtml(t.description || '')}</td><td class="text-end ${t.type === 'CREDIT' ? 'text-success' : 'text-danger'} fw-semibold">${t.type === 'CREDIT' ? '+' : '-'}${money(t.amount)}</td></tr>`).join('')
+        + `</tbody></table>`
+      : '<p class="muted small">No transactions yet. You\'ll be paid into your wallet when you complete deliveries.</p>';
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+
 function emptyState(icon, title, sub) {
   return `<div class="col-12"><div class="empty-state"><div class="ico"><i class="bi bi-${icon}"></i></div><div class="fw-semibold">${escapeHtml(title)}</div><div class="small">${escapeHtml(sub || '')}</div></div></div>`;
 }

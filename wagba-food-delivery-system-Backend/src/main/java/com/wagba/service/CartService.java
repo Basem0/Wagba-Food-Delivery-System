@@ -97,8 +97,9 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
         CartItem item = cartItemRepository.findByCartAndId(cart, itemId)
                 .orElseThrow(() -> new RuntimeException("Cart item not found"));
-        cartItemRepository.delete(item);
-        return toResponse(cart);
+        cart.getItems().remove(item);
+        cartRepository.save(cart);
+        return toResponse(cartRepository.findByUser(user).orElse(cart));
     }
 
     private CartResponse toResponse(Cart cart) {

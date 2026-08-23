@@ -13,17 +13,22 @@ function init() {
     if (v === 'restaurants') loadRestaurants();
     if (v === 'drivers') loadDrivers();
     if (v === 'users') loadUsers();
+    if (v === 'coupons') loadAdminCoupons();
     if (v === 'overview') renderOverview();
   };
+  window.__realtimeRefresh = () => { renderOverview(); };
   navTo('overview');
   renderOverview();
 }
 
 async function renderOverview() {
   try {
-    const [rests, drivers, users] = await Promise.all([
-      api('/admin/restaurants'), api('/admin/drivers'), api('/admin/users')
+    const [rp, dp, up] = await Promise.all([
+      api('/admin/restaurants?page=0&size=100'), api('/admin/drivers?page=0&size=100'), api('/admin/users?page=0&size=100')
     ]);
+    const rests = rp.content || [];
+    const drivers = dp.content || [];
+    const users = up.content || [];
     const pendR = rests.filter(r => (r.status || '') === 'PENDING').length;
     const pendD = drivers.filter(d => (d.status || '') === 'PENDING').length;
     const owners = users.filter(u => u.role === 'RESTAURANT_OWNER').length;
@@ -53,7 +58,13 @@ function statCard(icon, label, val, cls) {
 async function loadRestaurants() {
   try {
     const status = document.getElementById('restFilter').value;
-    const list = await api('/admin/restaurants' + (status ? '?status=' + status : ''));
+    const search = document.getElementById('restSearch') ? document.getElementById('restSearch').value.trim() : '';
+    const qs = new URLSearchParams();
+    if (status) qs.set('status', status);
+    if (search) qs.set('search', search);
+    qs.set('page', '0'); qs.set('size', '100');
+    const page = await api('/admin/restaurants?' + qs.toString());
+    const list = page.content || [];
     const el = document.getElementById('restList');
     if (!list.length) { el.innerHTML = emptyState('bi-shop', 'Nothing here', 'No restaurants for this filter.'); return; }
     el.innerHTML = list.map(r => `
@@ -63,8 +74,12 @@ async function loadRestaurants() {
           ${statusBadge(r.status)}
         </div>
         <p class="muted small mb-2">${escapeHtml(r.description || 'No description')}</p>
-        <div class="d-flex gap-2">
-          ${(r.status || '') === 'PENDING' ? `<button class="btn btn-sm btn-success" onclick="approveRestaurant(${r.id})">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectRestaurant(${r.id})">Reject</button>` : `<span class="muted small">${escapeHtml(r.cuisine || '')}</span>`}
+        <div class="d-flex gap-2 flex-wrap">
+          ${(r.status || '') === 'PENDING' ? `<button class="btn btn-sm btn-success" onclick="approveRestaurant(${r.id})">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectRestaurant(${r.id})">Reject</button>` : `
+            <button class="btn btn-sm btn-outline-warning" onclick="suspendRestaurant(${r.id})">Suspend</button>
+            <button class="btn btn-sm btn-outline-success" onclick="activateRestaurant(${r.id})">Activate</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="editRestaurantPrompt(${r.id})">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteRestaurant(${r.id})">Delete</button>`}
         </div>
       </div></div></div>`).join('');
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
@@ -76,7 +91,13 @@ async function rejectRestaurant(id) { try { await api('/admin/restaurants/' + id
 async function loadDrivers() {
   try {
     const status = document.getElementById('drvFilter').value;
-    const list = await api('/admin/drivers' + (status ? '?status=' + status : ''));
+    const search = document.getElementById('drvSearch') ? document.getElementById('drvSearch').value.trim() : '';
+    const qs = new URLSearchParams();
+    if (status) qs.set('status', status);
+    if (search) qs.set('search', search);
+    qs.set('page', '0'); qs.set('size', '100');
+    const page = await api('/admin/drivers?' + qs.toString());
+    const list = page.content || [];
     const el = document.getElementById('driverList');
     if (!list.length) { el.innerHTML = emptyState('bi-bicycle', 'Nothing here', 'No drivers for this filter.'); return; }
     el.innerHTML = list.map(d => `
@@ -86,8 +107,13 @@ async function loadDrivers() {
           ${statusBadge(d.status)}
         </div>
         <div class="muted small mb-2">${d.vehicleType ? escapeHtml(d.vehicleType) + ' · ' : ''}${d.vehicleNumber ? escapeHtml(d.vehicleNumber) : ''}</div>
-        <div class="d-flex gap-2">
-          ${(d.status || '') === 'PENDING' ? `<button class="btn btn-sm btn-success" onclick="approveDriver(${d.id})">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectDriver(${d.id})">Reject</button>` : ''}
+        <div class="d-flex gap-2 flex-wrap">
+          ${(d.status || '') === 'PENDING' ? `<button class="btn btn-sm btn-success" onclick="approveDriver(${d.id})">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectDriver(${d.id})">Reject</button>` : `
+            <button class="btn btn-sm btn-outline-warning" onclick="suspendUser(${d.id})">Suspend</button>
+            <button class="btn btn-sm btn-outline-success" onclick="activateUser(${d.id})">Activate</button>
+            <button class="btn btn-sm btn-outline-dark" onclick="banDriver(${d.id})">Ban</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="unbanDriver(${d.id})">Unban</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${d.id})">Delete</button>`}
         </div>
       </div></div></div>`).join('');
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
@@ -98,13 +124,39 @@ async function rejectDriver(id) { try { await api('/admin/drivers/' + id + '/rej
 // ---------- Users ----------
 async function loadUsers() {
   try {
-    const list = await api('/admin/users');
+    const search = document.getElementById('userSearch') ? document.getElementById('userSearch').value.trim() : '';
+    const qs = new URLSearchParams();
+    if (search) qs.set('search', search);
+    qs.set('page', '0'); qs.set('size', '100');
+    const page = await api('/admin/users?' + qs.toString());
+    const list = page.content || [];
     document.getElementById('userRows').innerHTML = list.map(u => `<tr>
       <td>${u.id}</td>
       <td><div class="cell-name"><div class="cell-avatar" style="width:30px;height:30px;font-size:.85rem">${escapeHtml(initials(u.name))}</div>${escapeHtml(u.name)}</div></td>
-      <td>${escapeHtml(u.email)}</td><td>${u.role}</td><td>${u.status}</td></tr>`).join('');
+      <td>${escapeHtml(u.email)}</td><td>${u.role}</td><td>${u.status}</td>
+      <td class="d-flex gap-1 flex-wrap">
+        <button class="btn btn-sm btn-outline-warning" onclick="suspendUser(${u.id})">Suspend</button>
+        <button class="btn btn-sm btn-outline-success" onclick="activateUser(${u.id})">Activate</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})">Delete</button>
+      </td></tr>`).join('');
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
+
+// ---------- Admin powers ----------
+async function suspendRestaurant(id) { try { await api('/admin/restaurants/' + id + '/suspend', 'POST'); toast('Suspended', 'Restaurant #' + id); loadRestaurants(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
+async function activateRestaurant(id) { try { await api('/admin/restaurants/' + id + '/activate', 'POST'); toast('Activated', 'Restaurant #' + id); loadRestaurants(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
+async function deleteRestaurant(id) { if (!confirm('Delete restaurant #' + id + '? This cannot be undone.')) return; try { await api('/admin/restaurants/' + id, 'DELETE'); toast('Deleted', 'Restaurant #' + id); loadRestaurants(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
+async function editRestaurantPrompt(id) {
+  const name = prompt('Restaurant name:'); if (name === null) return;
+  const cuisine = prompt('Cuisine:'); if (cuisine === null) return;
+  try { await api('/admin/restaurants/' + id, 'PUT', { name, cuisine }); toast('Updated', 'Restaurant #' + id); loadRestaurants(); renderOverview(); }
+  catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+async function suspendUser(id) { try { await api('/admin/users/' + id + '/suspend', 'POST'); toast('Suspended', 'User #' + id); loadDrivers(); loadUsers(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
+async function activateUser(id) { try { await api('/admin/users/' + id + '/activate', 'POST'); toast('Activated', 'User #' + id); loadDrivers(); loadUsers(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
+async function deleteUser(id) { if (!confirm('Delete user #' + id + '? This cannot be undone.')) return; try { await api('/admin/users/' + id, 'DELETE'); toast('Deleted', 'User #' + id); loadDrivers(); loadUsers(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
+async function banDriver(id) { try { await api('/admin/drivers/' + id + '/ban', 'POST'); toast('Banned', 'Driver #' + id); loadDrivers(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
+async function unbanDriver(id) { try { await api('/admin/drivers/' + id + '/unban', 'POST'); toast('Unbanned', 'Driver #' + id); loadDrivers(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
 
 // ---------- Coupons ----------
 async function createCoupon() {
@@ -118,6 +170,22 @@ async function assignCoupon() {
   const body = { userId: parseInt(document.getElementById('aUserId').value), code: document.getElementById('aCode').value };
   try { await api('/admin/coupons/assign', 'POST', body); toast('Assigned', body.code + ' → user ' + body.userId); document.getElementById('aUserId').value = ''; document.getElementById('aCode').value = ''; }
   catch (e) { showAlert('assignAlert', 'danger', e.message); }
+}
+async function loadAdminCoupons() {
+  try {
+    const list = await api('/admin/coupons');
+    const el = document.getElementById('couponList');
+    if (!list.length) { el.innerHTML = '<p class="muted small mb-0">No coupons yet.</p>'; return; }
+    el.innerHTML = list.map(c => `
+      <div class="col-md-6"><div class="card h-100"><div class="card-body">
+        <div class="d-flex justify-between align-center mb-2">
+          <div><b class="text-uppercase">${escapeHtml(c.code)}</b> ${c.active ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>'}</div>
+        </div>
+        <div class="muted small">${escapeHtml(c.description || '')}</div>
+        <div class="mt-2 small">${c.discountType === 'PERCENTAGE' ? c.value + '% off' : money(c.value)} off${c.minOrderTotal ? ' · min ' + money(c.minOrderTotal) : ''}</div>
+        ${c.expiryDate ? `<div class="muted small">Expires: ${escapeHtml(c.expiryDate)}</div>` : ''}
+      </div></div></div>`).join('');
+  } catch (e) { showAlert('couponAlert', 'danger', e.message); }
 }
 
 function emptyState(icon, title, sub) {

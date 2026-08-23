@@ -9,6 +9,9 @@ public class OrderRequest {
     private String buildingNumber;
     private String apartment;
     private String details;
+    private Double latitude;
+    private Double longitude;
+    private String paymentMethod;
 
     public Long getAddressId() {
         return addressId;
@@ -64,5 +67,29 @@ public class OrderRequest {
 
     public void setDetails(String details) {
         this.details = details;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 }
