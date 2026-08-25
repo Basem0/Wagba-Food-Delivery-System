@@ -4,12 +4,16 @@ import com.wagba.dto.driver.DriverLocationRequest;
 import com.wagba.dto.driver.DriverProfileRequest;
 import com.wagba.dto.driver.DriverResponse;
 import com.wagba.dto.wallet.WalletResponse;
+import com.wagba.dto.wallet.WithdrawRequest;
 import com.wagba.security.SecurityUtil;
 import com.wagba.service.DriverService;
 import com.wagba.service.WalletService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/driver")
@@ -25,19 +29,10 @@ public class DriverController {
     }
 
     @PostMapping("/profile")
-    public ResponseEntity<String> completeDriverProfile(
-            @RequestParam Long userId,
-            @RequestBody DriverProfileRequest request
-    ) {
-
-        driverService.completeDriverProfile(
-                userId,
-                request
-        );
-
-        return ResponseEntity.ok(
-                "Driver profile submitted successfully"
-        );
+    public ResponseEntity<String> completeDriverProfile(@Valid @RequestBody DriverProfileRequest request) {
+        // The userId is taken from the JWT, never from the request.
+        driverService.completeDriverProfile(SecurityUtil.getCurrentUserEmail(), request);
+        return ResponseEntity.ok("Driver profile submitted successfully");
     }
 
     @PostMapping("/location")
@@ -60,5 +55,10 @@ public class DriverController {
     @GetMapping("/wallet")
     public WalletResponse myWallet() {
         return walletService.getWalletInfo(SecurityUtil.getCurrentUserEmail());
+    }
+
+    @PostMapping("/wallet/withdraw")
+    public Map<String, Object> withdraw(@RequestBody WithdrawRequest request) {
+        return walletService.withdraw(SecurityUtil.getCurrentUserEmail(), request.getAmount());
     }
 }

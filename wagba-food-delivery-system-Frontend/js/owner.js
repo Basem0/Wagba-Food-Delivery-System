@@ -7,12 +7,69 @@ function init() {
     menu: { title: 'Menu', sub: 'Manage categories & dishes' },
     orders: { title: 'Orders', sub: 'Accept and fulfil orders' },
     profile: { title: 'Profile', sub: 'Your storefront & location' },
-    earnings: { title: 'Earnings', sub: 'Wallet & payouts' }
+    earnings: { title: 'Earnings', sub: 'Wallet & payouts' },
+    settings: { title: 'Settings', sub: 'Manage your account' }
   };
-  window.onNav = (v) => { if (v === 'menu') { loadCategories(); loadFoods(); } if (v === 'orders') loadOrders(); if (v === 'profile') loadProfileView(); if (v === 'earnings') loadEarnings(); };
+  window.onNav = (v) => { if (v === 'menu') { loadCategories(); loadFoods(); } if (v === 'orders') loadOrders(); if (v === 'profile') loadProfileView(); if (v === 'earnings') loadEarnings(); if (v === 'settings') renderSettings(); };
   window.__realtimeRefresh = () => { loadOrders(); loadRestaurant(); };
   navTo('dashboard');
   loadRestaurant();
+}
+
+const OWNER_SETTINGS_EXTRA = `
+<div class="col-12">
+  <div class="card detail-card"><div class="card-body">
+    <h5 class="card-title">Restaurant details</h5>
+    <div id="ownAlert"></div>
+    <div class="row g-2">
+      <div class="col-sm-6 mb-2"><label class="form-label">Name</label><input id="ownName" class="form-control"></div>
+      <div class="col-sm-6 mb-2"><label class="form-label">Cuisine</label><input id="ownCuisine" class="form-control"></div>
+      <div class="col-12 mb-2"><label class="form-label">Description</label><textarea id="ownDesc" class="form-control" rows="2"></textarea></div>
+      <div class="col-sm-6 mb-2"><label class="form-label">Phone</label><input id="ownPhone" class="form-control"></div>
+      <div class="col-sm-6 mb-2"><label class="form-label">ETA (minutes)</label><input id="ownEta" type="number" class="form-control"></div>
+      <div class="col-sm-6 mb-2"><label class="form-label">Delivery fee (EGP)</label><input id="ownFee" type="number" step="0.01" class="form-control"></div>
+      <div class="col-sm-6 mb-2"><label class="form-label">Min order (EGP)</label><input id="ownMin" type="number" step="0.01" class="form-control"></div>
+    </div>
+    <button class="btn-brand" onclick="saveOwnerSettings()">Save restaurant details</button>
+  </div></div>
+</div>`;
+
+function renderSettings() {
+  const root = document.getElementById('view-settings');
+  if (!root) return;
+  root.innerHTML = renderSettingsShell(OWNER_SETTINGS_EXTRA);
+  loadAccountSettings();
+  loadOwnerSettings();
+}
+async function loadOwnerSettings() {
+  try {
+    const r = await api('/restaurant-owner/restaurant');
+    const s = (v) => v == null ? '' : String(v);
+    if (document.getElementById('ownName')) document.getElementById('ownName').value = s(r.name);
+    if (document.getElementById('ownCuisine')) document.getElementById('ownCuisine').value = s(r.cuisine);
+    if (document.getElementById('ownDesc')) document.getElementById('ownDesc').value = s(r.description);
+    if (document.getElementById('ownPhone')) document.getElementById('ownPhone').value = s(r.phone);
+    if (document.getElementById('ownEta')) document.getElementById('ownEta').value = s(r.etaMinutes);
+    if (document.getElementById('ownFee')) document.getElementById('ownFee').value = s(r.deliveryFee);
+    if (document.getElementById('ownMin')) document.getElementById('ownMin').value = s(r.minOrderTotal);
+  } catch (e) { showAlert('ownAlert', 'danger', e.message); }
+}
+async function saveOwnerSettings() {
+  clearAlert('ownAlert');
+  const g = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const body = {
+    name: g('ownName'),
+    cuisine: g('ownCuisine'),
+    description: g('ownDesc'),
+    phone: g('ownPhone'),
+    etaMinutes: g('ownEta') ? parseInt(g('ownEta')) : null,
+    deliveryFee: g('ownFee') ? parseFloat(g('ownFee')) : null,
+    minOrderTotal: g('ownMin') ? parseFloat(g('ownMin')) : null
+  };
+  try {
+    await api('/restaurant-owner/restaurant', 'PUT', body);
+    toast('Saved', 'Restaurant details updated');
+  } catch (e) { showAlert('ownAlert', 'danger', e.message); }
 }
 
 async function loadRestaurant() {
@@ -135,11 +192,16 @@ function statCard(icon, label, val, cls) {
 // ---------- Categories ----------
 function loadCategories() {
   const cats = window._cats || [];
-  document.getElementById('catList').innerHTML = cats.length
-    ? cats.map(c => `<div class="d-flex justify-between align-center p-2 mb-2" style="background:var(--surface-2);border-radius:10px">
-        <span><i class="bi bi-tag me-2 text-muted"></i>${escapeHtml(c.name)}</span>
-        <button class="icon-btn" style="width:30px;height:30px" onclick="deleteCategory(${c.id})"><i class="bi bi-trash"></i></button></div>`).join('')
-    : '<p class="muted small">No categories yet.</p>';
+  const el = document.getElementById('catList');
+  if (el) el.innerHTML = cats.length
+    ? cats.map(c => `<div class="cat-item">
+        <span class="cat-ic"><i class="bi bi-tag"></i></span>
+        <span class="cat-name">${escapeHtml(c.name)}</span>
+        <button class="icon-btn cat-del" onclick="deleteCategory(${c.id})" title="Delete"><i class="bi bi-trash"></i></button>
+      </div>`).join('')
+    : '<p class="muted small mb-0">No categories yet.</p>';
+  const cc = document.getElementById('catCount');
+  if (cc) cc.textContent = cats.length + (cats.length === 1 ? ' category' : ' categories');
 }
 async function addCategory() {
   try {
@@ -158,13 +220,36 @@ async function loadFoods() {
   if (!window._cats || !window._cats.length) { try { const r = await api('/restaurant-owner/restaurant'); window._cats = r.categories || []; } catch (e) {} }
   try {
     const foods = await api('/restaurant-owner/foods');
-    const rows = document.getElementById('foodRows');
-    if (!foods.length) { rows.innerHTML = `<tr><td colspan="4" class="muted text-center py-3">No foods yet.</td></tr>`; return; }
-     rows.innerHTML = foods.map(f => `<tr>
-       <td><div class="cell-name"><div class="cell-avatar"><i class="bi bi-egg-fried"></i></div>${escapeHtml(f.name)}</div></td>
-       <td>${f.offer ? `<span class="old-price">${money(f.price)}</span> <span class="new-price">${money(f.discountPrice)}</span>` : money(f.price)}</td><td>${escapeHtml(f.categoryName || '-')}</td>
-       <td class="text-end"><button class="btn btn-sm btn-soft" onclick="openFoodModal(${f.id})">Edit</button>
-           <button class="btn btn-sm btn-outline-danger" onclick="deleteFood(${f.id})">Delete</button></td></tr>`).join('');
+    const el = document.getElementById('foodRows');
+    const fc = document.getElementById('foodCount');
+    if (fc) fc.textContent = foods.length + (foods.length === 1 ? ' item' : ' items');
+    if (!foods.length) { el.innerHTML = emptyState('bi-egg-fried', 'No menu items yet', 'Add your first dish to start selling.'); return; }
+    el.innerHTML = foods.map(f => {
+      const pic = f.imageUrl ? `<img src="${escapeHtml(f.imageUrl)}" onerror="onImgError(this)" data-label="${escapeHtml(f.name)}">` : `<i class="bi bi-egg-fried"></i>`;
+      const priceHtml = f.offer
+        ? `<span class="old-price">${money(f.price)}</span> <span class="new-price">${money(f.discountPrice)}</span>`
+        : money(f.price);
+      const avail = f.available === false
+        ? '<span class="badge bg-secondary">Unavailable</span>'
+        : '<span class="badge bg-success">Available</span>';
+      return `<div class="food-card">
+        <div class="pic">${pic}</div>
+        <div class="body">
+          <div class="d-flex justify-between align-center gap-2">
+            <div class="name text-truncate">${escapeHtml(f.name)}</div>
+            ${avail}
+          </div>
+          <div class="desc">${escapeHtml(f.categoryName || 'Uncategorized')}</div>
+          <div class="row">
+            <span class="price">${priceHtml}</span>
+            <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-soft" onclick="openFoodModal(${f.id})" title="Edit"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteFood(${f.id})" title="Delete"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 function openFoodModal(id) {
@@ -178,14 +263,15 @@ function openFoodModal(id) {
       document.getElementById('fDesc').value = f.description || ''; document.getElementById('fPrice').value = f.price;
       document.getElementById('fDiscount').value = f.discountPrice != null ? f.discountPrice : '';
       document.getElementById('fImg').value = f.imageUrl || ''; document.getElementById('fCat').value = f.categoryId || '';
+      document.getElementById('fAvailable').checked = f.available !== false;
       new bootstrap.Modal(document.getElementById('foodModal')).show();
     });
-  } else { ['fId','fName','fDesc','fPrice','fImg'].forEach(i => document.getElementById(i).value = ''); new bootstrap.Modal(document.getElementById('foodModal')).show(); }
+  } else { ['fId','fName','fDesc','fPrice','fImg'].forEach(i => document.getElementById(i).value = ''); document.getElementById('fDiscount').value=''; document.getElementById('fAvailable').checked = true; new bootstrap.Modal(document.getElementById('foodModal')).show(); }
 }
 async function saveFood() {
   clearAlert('foodAlert');
   const id = document.getElementById('fId').value;
-  const body = { name: document.getElementById('fName').value, description: document.getElementById('fDesc').value, price: document.getElementById('fPrice').value, imageUrl: document.getElementById('fImg').value, categoryId: document.getElementById('fCat').value || null, discountPrice: document.getElementById('fDiscount').value || null };
+  const body = { name: document.getElementById('fName').value, description: document.getElementById('fDesc').value, price: document.getElementById('fPrice').value, imageUrl: document.getElementById('fImg').value, categoryId: document.getElementById('fCat').value || null, discountPrice: document.getElementById('fDiscount').value || null, available: document.getElementById('fAvailable').checked };
   try {
     if (id) await api('/restaurant-owner/foods/' + id, 'PUT', body); else await api('/restaurant-owner/foods', 'POST', body);
     bootstrap.Modal.getInstance(document.getElementById('foodModal')).hide(); toast('Saved', 'Food updated'); loadFoods();
@@ -210,6 +296,11 @@ async function loadProfileView() {
     document.getElementById('pfFee').value = r.deliveryFee != null ? r.deliveryFee : '';
     document.getElementById('pfMin').value = r.minOrderTotal != null ? r.minOrderTotal : '';
     document.getElementById('pfImg').value = r.imageUrl || '';
+    document.getElementById('pfCity').value = r.city || '';
+    document.getElementById('pfStreet').value = r.street || '';
+    document.getElementById('pfBuilding').value = r.buildingNumber || '';
+    document.getElementById('pfApartment').value = r.apartment || '';
+    document.getElementById('pfDetails').value = r.details || '';
   } catch (e) { showAlert('profileAlert', 'danger', e.message); }
   setTimeout(() => { initProfileMap(); if (profileMap) profileMap.invalidateSize(); }, 200);
 }
@@ -238,6 +329,24 @@ function useRestaurantLocation() {
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
+async function searchRestaurantAddress() {
+  const q = document.getElementById('pfSearch').value.trim();
+  if (!q) { toast('Search', 'Type an address first', 'err'); return; }
+  try {
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+    const data = await res.json();
+    if (!data.length) { toast('Not found', 'No match for that address', 'err'); return; }
+    const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+    if (!profileMap) initProfileMap();
+    setProfileMarker(lat, lng);
+    const a = data[0].address || {};
+    if (a.city || a.town || a.village) document.getElementById('pfCity').value = a.city || a.town || a.village;
+    if (a.road) document.getElementById('pfStreet').value = a.road;
+    if (a.house_number) document.getElementById('pfBuilding').value = a.house_number;
+    if (a.suburb || a.neighbourhood) document.getElementById('pfDetails').value = a.suburb || a.neighbourhood;
+    toast('Location set', data[0].display_name);
+  } catch (e) { toast('Error', e.message, 'err'); }
+}
 async function saveProfileView() {
   clearAlert('profileAlert');
   const body = {
@@ -249,6 +358,11 @@ async function saveProfileView() {
     deliveryFee: document.getElementById('pfFee').value || null,
     minOrderTotal: document.getElementById('pfMin').value || null,
     phone: document.getElementById('pfPhone').value || null,
+    city: document.getElementById('pfCity').value || null,
+    street: document.getElementById('pfStreet').value || null,
+    buildingNumber: document.getElementById('pfBuilding').value || null,
+    apartment: document.getElementById('pfApartment').value || null,
+    details: document.getElementById('pfDetails').value || null,
     latitude: profileMarker ? profileMarker.getLatLng().lat : (window._rest && window._rest.latitude),
     longitude: profileMarker ? profileMarker.getLatLng().lng : (window._rest && window._rest.longitude)
   };
@@ -263,7 +377,8 @@ async function saveProfileView() {
 async function loadEarnings() {
   try {
     const w = await api('/restaurant-owner/wallet');
-    document.getElementById('walletBalance').textContent = money(w.balance != null ? w.balance : 0);
+    window._ownerBalance = w.balance != null ? w.balance : 0;
+    document.getElementById('walletBalance').textContent = money(window._ownerBalance);
     const txns = w.transactions || [];
     document.getElementById('walletTxns').innerHTML = txns.length
       ? `<table class="table wagba"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th class="text-end">Amount</th></tr></thead><tbody>`
@@ -271,6 +386,25 @@ async function loadEarnings() {
         + `</tbody></table>`
       : '<p class="muted small">No transactions yet. You\'ll be paid into your wallet when card orders are delivered.</p>';
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+
+async function openWithdraw() {
+  clearAlert('withdrawAlert');
+  document.getElementById('wdAmount').value = '';
+  document.getElementById('wdAvail').textContent = money(window._ownerBalance || 0);
+  new bootstrap.Modal(document.getElementById('withdrawModal')).show();
+}
+async function withdrawEarnings() {
+  clearAlert('withdrawAlert');
+  const amt = parseFloat(document.getElementById('wdAmount').value);
+  if (!amt || amt <= 0) { showAlert('withdrawAlert', 'danger', 'Enter a valid amount'); return; }
+  if (amt > (window._ownerBalance || 0)) { showAlert('withdrawAlert', 'danger', 'Amount exceeds your wallet balance'); return; }
+  try {
+    const res = await api('/restaurant-owner/wallet/withdraw', 'POST', { amount: amt });
+    bootstrap.Modal.getInstance(document.getElementById('withdrawModal')).hide();
+    toast('Withdrawal ' + (res.devMode ? '(demo)' : '') + ' sent', 'Stripe payout ' + (res.status || 'processed') + ' · ' + money(amt));
+    loadEarnings();
+  } catch (e) { showAlert('withdrawAlert', 'danger', e.message); }
 }
 
 // ---------- Image upload (#6) ----------
@@ -295,23 +429,31 @@ async function uploadImage(targetId, fileId) {
 // ---------- Orders ----------
 async function loadOrders() {
   try {
+    showSkeletons('orderList', 4, 132);
     const op = await api('/restaurant-owner/orders?page=0&size=100');
     const list = op.content || [];
     const el = document.getElementById('orderList');
     if (!list.length) { el.innerHTML = emptyState('bi-receipt', 'No orders yet', 'New orders will appear here in real time.'); return; }
     el.innerHTML = list.map(o => `
-      <div class="card mb-3 fade-in"><div class="card-body">
-        <div class="d-flex justify-between align-center mb-2">
-          <div><b>Order #${o.id}</b> · ${escapeHtml(o.customerName || 'Customer')}<div class="muted small">${fmtDateTime(o.createdAt)}</div>${o.deliveryAddress ? `<div class="muted small"><i class="bi bi-geo-alt"></i> ${escapeHtml(formatAddr(o.deliveryAddress))}</div>` : ''}</div>
-          ${statusBadge(o.status)}
+      <div class="card order-card mb-3 fade-in"><div class="card-body">
+        <div class="oc-top">
+          <div class="oc-ic"><i class="bi bi-receipt"></i></div>
+          <div style="flex:1;min-width:0">
+            <div class="oc-title">Order #${o.id}</div>
+            <div class="oc-sub">${escapeHtml(o.customerName || 'Customer')} · ${fmtDateTime(o.createdAt)}</div>
+          </div>
+          <div class="oc-badges">${statusBadge(o.status)}</div>
         </div>
-        <div class="row g-2 mb-2">${o.items.map(i => `<div class="col-md-6"><div class="d-flex gap-2 align-center"><div class="cell-avatar" style="width:30px;height:30px;font-size:.9rem"><i class="bi bi-egg-fried"></i></div><div class="small">${escapeHtml(i.foodName)} × ${i.quantity}</div></div></div>`).join('')}</div>
-        <div class="d-flex justify-between align-center">
-          <b>${money(o.totalPrice)}</b>
+        <div class="oc-meta">
+          ${o.deliveryAddress ? `<div class="m"><i class="bi bi-geo-alt"></i> ${escapeHtml(formatAddr(o.deliveryAddress))}</div>` : ''}
+          <div class="m"><i class="bi bi-bag"></i> ${o.items.length} item${o.items.length === 1 ? '' : 's'}</div>
+        </div>
+        <div class="oc-foot">
+          <div class="oc-total">${money(o.totalPrice)}</div>
           <div class="d-flex gap-2">
             ${o.status === 'PENDING' ? `<button class="btn btn-sm btn-success" onclick="actOrder(${o.id},'accept')">Accept</button><button class="btn btn-sm btn-danger" onclick="actOrder(${o.id},'reject')">Reject</button>` : ''}
             ${o.status === 'ACCEPTED' ? `<button class="btn btn-sm btn-brand" onclick="setStatus(${o.id},'PREPARING')"><i class="bi bi-egg-fried"></i> Start preparing</button>` : ''}
-            ${o.status === 'PREPARING' ? `<button class="btn btn-sm btn-brand" onclick="setStatus(${o.id},'READY')"><i class="bi bi-check2-circle"></i> Mark ready</button>` : ''}
+            ${o.status === 'PREPARING' ? `<button class="btn btn-sm btn-brand" onclick="setStatus(${o.id},'READY')"><i class="bi bi-check2-circle"></i> Ready</button>` : ''}
             ${o.status === 'READY' ? `<button class="btn btn-sm btn-brand" onclick="setStatus(${o.id},'OUT_FOR_DELIVERY')"><i class="bi bi-bicycle"></i> Out for delivery</button>` : ''}
           </div>
         </div>

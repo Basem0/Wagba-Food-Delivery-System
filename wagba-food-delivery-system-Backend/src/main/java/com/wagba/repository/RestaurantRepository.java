@@ -24,6 +24,8 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
     Page<Restaurant> findByStatus(RestaurantStatus status, Pageable pageable);
 
+    long countByStatus(RestaurantStatus status);
+
     @Query("SELECT r FROM Restaurant r WHERE (:status IS NULL OR r.status = :status) AND (LOWER(r.name) LIKE %:q% OR LOWER(r.cuisine) LIKE %:q%)")
     Page<Restaurant> adminSearch(@Param("status") RestaurantStatus status, @Param("q") String q, Pageable pageable);
 

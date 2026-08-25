@@ -1,18 +1,25 @@
 package com.wagba.controller.admin;
 
 import com.wagba.dto.PageResponse;
+import com.wagba.dto.order.OrderResponse;
 import com.wagba.dto.restaurant.RestaurantUpdateRequest;
+import com.wagba.entity.Driver;
 import com.wagba.entity.Restaurant;
 import com.wagba.entity.User;
+import com.wagba.entity.enums.OrderStatus;
 import com.wagba.entity.enums.RestaurantStatus;
 import com.wagba.entity.enums.UserRole;
 import com.wagba.entity.enums.UserStatus;
+import com.wagba.repository.DriverRepository;
+import com.wagba.repository.FoodRepository;
 import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.UserRepository;
 import com.wagba.service.AdminService;
+import com.wagba.service.OrderService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -30,13 +37,22 @@ public class AdminController {
     private final AdminService adminService;
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
+    private final FoodRepository foodRepository;
+    private final DriverRepository driverRepository;
+    private final OrderService orderService;
 
     public AdminController(AdminService adminService,
                            RestaurantRepository restaurantRepository,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           FoodRepository foodRepository,
+                           DriverRepository driverRepository,
+                           OrderService orderService) {
         this.adminService = adminService;
         this.restaurantRepository = restaurantRepository;
         this.userRepository = userRepository;
+        this.foodRepository = foodRepository;
+        this.driverRepository = driverRepository;
+        this.orderService = orderService;
     }
 
     @PostMapping("/drivers/{driverId}/approve")
@@ -134,6 +150,10 @@ public class AdminController {
             m.put("status", r.getStatus().name());
             m.put("ownerEmail", r.getOwner() != null ? r.getOwner().getEmail() : null);
             m.put("cuisine", r.getCuisine());
+            m.put("description", r.getDescription());
+            m.put("avgRating", r.getAvgRating());
+            m.put("phone", r.getPhone());
+            m.put("hasOffers", foodRepository.existsByCategoryRestaurantAndDiscountPriceIsNotNull(r));
             return m;
         }).collect(Collectors.toList());
         return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
@@ -147,7 +167,8 @@ public class AdminController {
         Pageable pg = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
         Page<User> p;
         if (search != null && !search.isBlank()) {
-            p = userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, pg);
+            // Scoped to DRIVER - the unscoped search used to return customers here.
+            p = userRepository.searchByRole(UserRole.DRIVER, search.toLowerCase(), pg);
         } else if (status != null) {
             p = userRepository.findByRoleAndStatus(UserRole.DRIVER, status, pg);
         } else {
@@ -159,6 +180,14 @@ public class AdminController {
             m.put("name", u.getName());
             m.put("email", u.getEmail());
             m.put("status", u.getStatus().name());
+            Driver drv = driverRepository.findByUser(u).orElse(null);
+            if (drv != null) {
+                m.put("vehicleType", drv.getVehicleType());
+                m.put("vehicleNumber", drv.getVehicleNumber());
+                m.put("phoneNumber", drv.getPhoneNumber());
+                m.put("licenseNumber", drv.getLicenseNumber());
+                m.put("nationalId", drv.getNationalId());
+            }
             return m;
         }).collect(Collectors.toList());
         return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
@@ -188,5 +217,33 @@ public class AdminController {
             return m;
         }).collect(Collectors.toList());
         return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
+    }
+
+    /**
+     * The README requires the admin to be able to view every order; there was no
+     * endpoint for it at all.
+     */
+    @GetMapping("/orders")
+    public PageResponse<OrderResponse> listOrders(@RequestParam(required = false) OrderStatus status,
+                                                 @RequestParam(defaultValue = "0") int page,
+                                                 @RequestParam(defaultValue = "20") int size) {
+        Pageable pg = PageRequest.of(Math.max(page, 0), Math.max(size, 1),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        return orderService.allOrders(status, pg);
+    }
+
+    /** Headline counts for the dashboard, so the overview does not have to fetch every list. */
+    @GetMapping("/stats")
+    public Map<String, Object> stats() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("customers", userRepository.countByRole(UserRole.CUSTOMER));
+        m.put("drivers", userRepository.countByRole(UserRole.DRIVER));
+        m.put("owners", userRepository.countByRole(UserRole.RESTAURANT_OWNER));
+        m.put("restaurants", restaurantRepository.count());
+        m.put("pendingRestaurants", restaurantRepository.countByStatus(RestaurantStatus.PENDING));
+        m.put("pendingDrivers", userRepository.findByRoleAndStatus(UserRole.DRIVER, UserStatus.PENDING).size());
+        m.put("orders", orderService.countAll());
+        m.put("revenue", orderService.totalRevenue());
+        return m;
     }
 }

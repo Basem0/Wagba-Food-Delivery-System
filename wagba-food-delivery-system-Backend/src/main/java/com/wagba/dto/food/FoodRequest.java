@@ -10,6 +10,7 @@ public class FoodRequest {
     private String imageUrl;
     private Long categoryId;
     private BigDecimal discountPrice;
+    private Boolean available;
 
     public String getName() {
         return name;
@@ -57,5 +58,13 @@ public class FoodRequest {
 
     public void setDiscountPrice(BigDecimal discountPrice) {
         this.discountPrice = discountPrice;
+    }
+
+    public Boolean getAvailable() {
+        return available;
+    }
+
+    public void setAvailable(Boolean available) {
+        this.available = available;
     }
 }

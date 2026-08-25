@@ -2,6 +2,7 @@ package com.wagba.controller.common;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +30,7 @@ public class FileController {
             return ResponseEntity.badRequest().body(Map.of("error", "Empty file"));
         }
         if (file.getSize() > MAX_BYTES) {
-            return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+            return ResponseEntity.status(HttpStatusCode.valueOf(413))
                     .body(Map.of("error", "File too large (max 5MB)"));
         }
         String contentType = file.getContentType();

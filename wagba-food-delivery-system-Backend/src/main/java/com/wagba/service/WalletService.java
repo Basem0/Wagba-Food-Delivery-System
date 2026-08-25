@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class WalletService {
@@ -24,13 +25,16 @@ public class WalletService {
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final UserRepository userRepository;
+    private final StripeService stripeService;
 
     public WalletService(WalletRepository walletRepository,
                          WalletTransactionRepository walletTransactionRepository,
-                         UserRepository userRepository) {
+                         UserRepository userRepository,
+                         StripeService stripeService) {
         this.walletRepository = walletRepository;
         this.walletTransactionRepository = walletTransactionRepository;
         this.userRepository = userRepository;
+        this.stripeService = stripeService;
     }
 
     private User currentUser() {
@@ -76,6 +80,36 @@ public class WalletService {
                 t.getCreatedAt() != null ? t.getCreatedAt().toString() : null
         )).toList();
         return new WalletResponse(wallet.getBalance(), list);
+    }
+
+    @Transactional
+    public void debit(User user, BigDecimal amount, String description, String reference) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
+        Wallet wallet = getOrCreateWallet(user);
+        if (wallet.getBalance().compareTo(amount) < 0) {
+            throw new RuntimeException("Insufficient wallet balance");
+        }
+        wallet.setBalance(wallet.getBalance().subtract(amount));
+        walletRepository.save(wallet);
+
+        WalletTransaction txn = new WalletTransaction();
+        txn.setWallet(wallet);
+        txn.setAmount(amount);
+        txn.setType(WalletTxnType.DEBIT);
+        txn.setDescription(description);
+        txn.setReference(reference);
+        walletTransactionRepository.save(txn);
+    }
+
+    @Transactional
+    public Map<String, Object> withdraw(String email, BigDecimal amount) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Enter a valid amount");
+        }
+        debit(user, amount, "Withdrawal via Stripe", "STRIPE_PAYOUT");
+        return stripeService.createPayout(amount);
     }
 
     public WalletResponse myWallet() {

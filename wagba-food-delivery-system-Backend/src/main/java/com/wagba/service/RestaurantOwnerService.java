@@ -27,15 +27,15 @@ public class RestaurantOwnerService {
     }
 
     @Transactional
-    public void completeRestaurantProfile(
-            Long userId,
-            RestaurantProfileRequest request
-    ) {
+    /**
+     * Takes the caller's email rather than a userId: the controller used to accept
+     * the id as a request parameter, so any signed-in owner could create a
+     * restaurant under someone else's account.
+     */
+    public void completeRestaurantProfile(String email, RestaurantProfileRequest request) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found")
-                );
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!user.isEmailVerified()) {
             throw new RuntimeException(
@@ -49,17 +49,15 @@ public class RestaurantOwnerService {
             );
         }
 
-        if (user.getOnboardingStatus()
-                != OnboardingStatus.PROFILE_COMPLETION_REQUIRED) {
-
-            throw new RuntimeException(
-                    "Restaurant profile completion is not required"
-            );
-        }
-
         if (restaurantRepository.existsByOwner(user)) {
             throw new RuntimeException(
                     "Restaurant profile already exists"
+            );
+        }
+
+        if (user.getOnboardingStatus() == OnboardingStatus.ROLE_SELECTION_REQUIRED) {
+            throw new RuntimeException(
+                    "Choose your account type before submitting a restaurant profile"
             );
         }
 
@@ -72,6 +70,13 @@ public class RestaurantOwnerService {
         restaurant.setEtaMinutes(request.getEtaMinutes());
         restaurant.setDeliveryFee(request.getDeliveryFee());
         restaurant.setMinOrderTotal(request.getMinOrderTotal());
+        restaurant.setPhone(request.getPhone());
+        restaurant.setCity(request.getCity());
+        restaurant.setStreet(request.getStreet());
+        restaurant.setBuildingNumber(request.getBuildingNumber());
+        restaurant.setDetails(request.getDetails());
+        restaurant.setLatitude(request.getLatitude());
+        restaurant.setLongitude(request.getLongitude());
         restaurant.setOwner(user);
 
         restaurantRepository.save(restaurant);
@@ -80,6 +85,8 @@ public class RestaurantOwnerService {
                 OnboardingStatus.COMPLETED
         );
 
+        // Waits for an admin to approve the restaurant; AdminService.approveRestaurant
+        // flips both the restaurant and the owner to ACTIVE.
         user.setStatus(UserStatus.PENDING);
 
         userRepository.save(user);

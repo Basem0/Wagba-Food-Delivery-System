@@ -14,8 +14,6 @@ import com.wagba.repository.CategoryRepository;
 import com.wagba.repository.FoodRepository;
 import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.UserRepository;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -118,6 +116,11 @@ public class RestaurantService {
         if (request.getDeliveryFee() != null) restaurant.setDeliveryFee(request.getDeliveryFee());
         if (request.getMinOrderTotal() != null) restaurant.setMinOrderTotal(request.getMinOrderTotal());
         if (request.getPhone() != null) restaurant.setPhone(request.getPhone());
+        if (request.getCity() != null) restaurant.setCity(request.getCity());
+        if (request.getStreet() != null) restaurant.setStreet(request.getStreet());
+        if (request.getBuildingNumber() != null) restaurant.setBuildingNumber(request.getBuildingNumber());
+        if (request.getApartment() != null) restaurant.setApartment(request.getApartment());
+        if (request.getDetails() != null) restaurant.setDetails(request.getDetails());
         if (request.getLatitude() != null) restaurant.setLatitude(request.getLatitude());
         if (request.getLongitude() != null) restaurant.setLongitude(request.getLongitude());
 
@@ -196,6 +199,11 @@ public class RestaurantService {
                 restaurant.getMinOrderTotal(),
                 restaurant.getAvgRating(),
                 restaurant.getPhone(),
+                restaurant.getCity(),
+                restaurant.getStreet(),
+                restaurant.getBuildingNumber(),
+                restaurant.getApartment(),
+                restaurant.getDetails(),
                 restaurant.getLatitude(),
                 restaurant.getLongitude(),
                 hasOffers

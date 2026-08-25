@@ -12,6 +12,11 @@ public class RestaurantUpdateRequest {
     private BigDecimal deliveryFee;
     private BigDecimal minOrderTotal;
     private String phone;
+    private String city;
+    private String street;
+    private String buildingNumber;
+    private String apartment;
+    private String details;
     private Double latitude;
     private Double longitude;
 
@@ -77,6 +82,46 @@ public class RestaurantUpdateRequest {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    public String getBuildingNumber() {
+        return buildingNumber;
+    }
+
+    public void setBuildingNumber(String buildingNumber) {
+        this.buildingNumber = buildingNumber;
+    }
+
+    public String getApartment() {
+        return apartment;
+    }
+
+    public void setApartment(String apartment) {
+        this.apartment = apartment;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(String details) {
+        this.details = details;
     }
 
     public Double getLatitude() {

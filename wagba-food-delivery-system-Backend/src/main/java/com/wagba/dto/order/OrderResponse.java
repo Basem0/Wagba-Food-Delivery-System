@@ -8,6 +8,8 @@ public record OrderResponse(
         String status,
         Long restaurantId,
         String restaurantName,
+        BigDecimal subtotal,
+        BigDecimal deliveryFee,
         BigDecimal totalPrice,
         BigDecimal discountAmount,
         String couponCode,
@@ -16,9 +18,11 @@ public record OrderResponse(
         String deliveryStatus,
         String createdAt,
         String customerName,
+        String customerPhone,
         Double customerLatitude,
         Double customerLongitude,
         boolean reviewed,
-        String paymentMethod
+        String paymentMethod,
+        boolean paid
 ) {
 }

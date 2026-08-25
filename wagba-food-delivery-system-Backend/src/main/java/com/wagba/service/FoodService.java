@@ -62,6 +62,7 @@ public class FoodService {
         food.setDescription(request.getDescription());
         food.setPrice(request.getPrice());
         food.setImageUrl(request.getImageUrl());
+        food.setAvailable(request.getAvailable() != null ? request.getAvailable() : true);
         food.setCategory(category);
         foodRepository.save(food);
 
@@ -82,6 +83,7 @@ public class FoodService {
         if (request.getPrice() != null) food.setPrice(request.getPrice());
         if (request.getImageUrl() != null) food.setImageUrl(request.getImageUrl());
         if (request.getDiscountPrice() != null) food.setDiscountPrice(request.getDiscountPrice());
+        if (request.getAvailable() != null) food.setAvailable(request.getAvailable());
         if (request.getCategoryId() != null) {
             Category category = getOwnCategory(owner, request.getCategoryId());
             food.setCategory(category);

@@ -4,7 +4,6 @@ import com.wagba.dto.review.ReviewRequest;
 import com.wagba.dto.review.ReviewResponse;
 import com.wagba.security.SecurityUtil;
 import com.wagba.service.ReviewService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 

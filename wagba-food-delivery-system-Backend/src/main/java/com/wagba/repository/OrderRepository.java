@@ -7,7 +7,10 @@ import com.wagba.entity.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +26,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByStatus(OrderStatus status);
 
+    Page<Order> findByStatus(OrderStatus status, Pageable pageable);
+
     Page<Order> findByCustomer(User customer, Pageable pageable);
 
     Page<Order> findByRestaurant(Restaurant restaurant, Pageable pageable);
@@ -30,4 +35,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     long countByCustomer(User customer);
 
     long countByRestaurant(Restaurant restaurant);
+
+    /** Null when no order has that status yet. */
+    @Query("SELECT SUM(o.totalPrice) FROM Order o WHERE o.status = :status")
+    BigDecimal sumTotalByStatus(@Param("status") OrderStatus status);
 }

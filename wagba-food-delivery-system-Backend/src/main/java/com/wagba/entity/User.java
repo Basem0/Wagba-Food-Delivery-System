@@ -30,6 +30,13 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
+    /**
+     * Role picked at sign-up. Applied automatically once the email is verified,
+     * so the user never has to choose twice.
+     */
+    @Enumerated(EnumType.STRING)
+    private UserRole pendingRole;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status;
@@ -115,6 +122,14 @@ public class User {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public UserRole getPendingRole() {
+        return pendingRole;
+    }
+
+    public void setPendingRole(UserRole pendingRole) {
+        this.pendingRole = pendingRole;
     }
 
     public UserStatus getStatus() {

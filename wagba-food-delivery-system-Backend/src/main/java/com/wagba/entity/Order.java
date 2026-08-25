@@ -18,6 +18,15 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Sum of the items only, before discount and before delivery fee. */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal subtotal;
+
+    /** Delivery fee charged for this order, snapshotted at checkout. */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal deliveryFee;
+
+    /** subtotal - discountAmount + deliveryFee */
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalPrice;
 
@@ -25,6 +34,14 @@ public class Order {
     private BigDecimal discountAmount;
 
     private String couponCode;
+
+    @Column(nullable = false)
+    private boolean paid = false;
+
+    /** Stripe PaymentIntent id, or "CASH" once collected on delivery. */
+    private String paymentReference;
+
+    private LocalDateTime paidAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -80,6 +97,46 @@ public class Order {
 
     public void setTotalPrice(BigDecimal totalPrice) {
         this.totalPrice = totalPrice;
+    }
+
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
+
+    public void setSubtotal(BigDecimal subtotal) {
+        this.subtotal = subtotal;
+    }
+
+    public BigDecimal getDeliveryFee() {
+        return deliveryFee;
+    }
+
+    public void setDeliveryFee(BigDecimal deliveryFee) {
+        this.deliveryFee = deliveryFee;
+    }
+
+    public boolean isPaid() {
+        return paid;
+    }
+
+    public void setPaid(boolean paid) {
+        this.paid = paid;
+    }
+
+    public String getPaymentReference() {
+        return paymentReference;
+    }
+
+    public void setPaymentReference(String paymentReference) {
+        this.paymentReference = paymentReference;
+    }
+
+    public LocalDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(LocalDateTime paidAt) {
+        this.paidAt = paidAt;
     }
 
     public BigDecimal getDiscountAmount() {

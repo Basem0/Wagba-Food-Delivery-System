@@ -9,7 +9,6 @@ import com.wagba.entity.enums.UserRole;
 import com.wagba.entity.enums.UserStatus;
 import com.wagba.repository.DriverRepository;
 import com.wagba.repository.UserRepository;
-import com.wagba.repository.DriverRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -29,16 +28,16 @@ public class DriverService {
         this.driverRepository = driverRepository;
     }
 
+    /**
+     * Takes the caller's email rather than a userId: the controller used to accept
+     * the id as a request parameter, so any signed-in driver could submit a profile
+     * on behalf of another account.
+     */
     @Transactional
-    public void completeDriverProfile(
-            Long userId,
-            DriverProfileRequest request
-    ) {
+    public void completeDriverProfile(String email, DriverProfileRequest request) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found")
-                );
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!user.isEmailVerified()) {
             throw new RuntimeException(
@@ -52,17 +51,15 @@ public class DriverService {
             );
         }
 
-        if (user.getOnboardingStatus()
-                != OnboardingStatus.PROFILE_COMPLETION_REQUIRED) {
-
-            throw new RuntimeException(
-                    "Driver profile completion is not available"
-            );
-        }
-
         if (driverRepository.existsByUser(user)) {
             throw new RuntimeException(
                     "Driver profile already exists"
+            );
+        }
+
+        if (user.getOnboardingStatus() == OnboardingStatus.ROLE_SELECTION_REQUIRED) {
+            throw new RuntimeException(
+                    "Choose your account type before submitting a driver profile"
             );
         }
 
@@ -82,6 +79,8 @@ public class DriverService {
                 OnboardingStatus.COMPLETED
         );
 
+        // Waits for an admin to approve the documents; AdminService.approveDriver
+        // requires exactly this status.
         user.setStatus(UserStatus.PENDING);
 
         userRepository.save(user);

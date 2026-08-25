@@ -4,7 +4,7 @@ import com.wagba.dto.cart.CartItemRequest;
 import com.wagba.dto.cart.CartResponse;
 import com.wagba.security.SecurityUtil;
 import com.wagba.service.CartService;
-import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +20,7 @@ public class CartController {
     }
 
     @PostMapping("/items")
-    public CartResponse addItem(@RequestBody CartItemRequest request) {
+    public CartResponse addItem(@Valid @RequestBody CartItemRequest request) {
         return cartService.addItem(SecurityUtil.getCurrentUserEmail(), request);
     }
 
@@ -29,6 +29,8 @@ public class CartController {
         return cartService.getCart(SecurityUtil.getCurrentUserEmail());
     }
 
+    // Not @Valid: only the quantity is meaningful here, and requiring foodId too
+    // would reject the payload the client actually sends.
     @PutMapping("/items/{id}")
     public CartResponse updateItem(@PathVariable Long id, @RequestBody CartItemRequest request) {
         return cartService.updateItem(SecurityUtil.getCurrentUserEmail(), id, request.getQuantity());
@@ -37,5 +39,11 @@ public class CartController {
     @DeleteMapping("/items/{id}")
     public CartResponse removeItem(@PathVariable Long id) {
         return cartService.removeItem(SecurityUtil.getCurrentUserEmail(), id);
+    }
+
+    /** Needed to switch restaurants - a cart may only hold items from one. */
+    @DeleteMapping("/items")
+    public CartResponse clear() {
+        return cartService.clear(SecurityUtil.getCurrentUserEmail());
     }
 }

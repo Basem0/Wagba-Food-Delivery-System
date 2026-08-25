@@ -7,16 +7,19 @@ import com.wagba.dto.restaurant.CategoryResponse;
 import com.wagba.dto.restaurant.RestaurantProfileRequest;
 import com.wagba.dto.restaurant.RestaurantResponse;
 import com.wagba.dto.restaurant.RestaurantUpdateRequest;
+import com.wagba.dto.wallet.WithdrawRequest;
 import com.wagba.security.SecurityUtil;
 import com.wagba.service.FoodService;
 import com.wagba.service.RestaurantOwnerService;
 import com.wagba.service.RestaurantService;
 import com.wagba.service.WalletService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/restaurant-owner")
@@ -41,11 +44,9 @@ public class RestaurantOwnerController {
     }
 
     @PostMapping("/profile")
-    public ResponseEntity<String> completeRestaurantProfile(
-            @RequestParam Long userId,
-            @RequestBody RestaurantProfileRequest request
-    ) {
-        restaurantOwnerService.completeRestaurantProfile(userId, request);
+    public ResponseEntity<String> completeRestaurantProfile(@Valid @RequestBody RestaurantProfileRequest request) {
+        // The owner is taken from the JWT, never from the request.
+        restaurantOwnerService.completeRestaurantProfile(SecurityUtil.getCurrentUserEmail(), request);
         return ResponseEntity.ok("Restaurant profile submitted successfully");
     }
 
@@ -105,5 +106,10 @@ public class RestaurantOwnerController {
     @GetMapping("/wallet")
     public com.wagba.dto.wallet.WalletResponse myWallet() {
         return walletService.getWalletInfo(SecurityUtil.getCurrentUserEmail());
+    }
+
+    @PostMapping("/wallet/withdraw")
+    public Map<String, Object> withdraw(@RequestBody WithdrawRequest request) {
+        return walletService.withdraw(SecurityUtil.getCurrentUserEmail(), request.getAmount());
     }
 }

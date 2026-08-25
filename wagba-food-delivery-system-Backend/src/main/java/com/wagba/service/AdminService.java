@@ -1,12 +1,11 @@
 package com.wagba.service;
 
 import com.wagba.dto.restaurant.RestaurantUpdateRequest;
-import com.wagba.entity.Driver;
 import com.wagba.entity.Restaurant;
 import com.wagba.entity.User;
 import com.wagba.entity.enums.RestaurantStatus;
+import com.wagba.entity.enums.UserRole;
 import com.wagba.entity.enums.UserStatus;
-import com.wagba.repository.DeliveryRepository;
 import com.wagba.repository.DriverRepository;
 import com.wagba.repository.OrderRepository;
 import com.wagba.repository.RestaurantRepository;
@@ -21,29 +20,32 @@ public class AdminService {
     private final DriverRepository driverRepository;
     private final RestaurantRepository restaurantRepository;
     private final OrderRepository orderRepository;
-    private final DeliveryRepository deliveryRepository;
 
     public AdminService(UserRepository userRepository,
                         DriverRepository driverRepository,
                         RestaurantRepository restaurantRepository,
-                        OrderRepository orderRepository,
-                        DeliveryRepository deliveryRepository) {
+                        OrderRepository orderRepository) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.restaurantRepository = restaurantRepository;
         this.orderRepository = orderRepository;
-        this.deliveryRepository = deliveryRepository;
     }
 
+    /**
+     * Note: {@code driverId} is the <em>User</em> id, which is what
+     * {@code GET /admin/drivers} returns.
+     */
     @Transactional
     public void approveDriver(Long driverId) {
-        User user = userRepository.findById(driverId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        Driver driver = driverRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Driver not found"));
+        User user = requireDriver(driverId);
+        if (driverRepository.findByUser(user).isEmpty()) {
+            throw new RuntimeException(user.getName()
+                    + " has not submitted their vehicle details yet, so there is nothing to approve");
+        }
 
         if (user.getStatus() != UserStatus.PENDING) {
-            throw new RuntimeException("Only pending drivers can be approved");
+            throw new RuntimeException("Only pending drivers can be approved (this one is "
+                    + user.getStatus().name().toLowerCase() + ")");
         }
 
         user.setStatus(UserStatus.ACTIVE);
@@ -52,17 +54,25 @@ public class AdminService {
 
     @Transactional
     public void rejectDriver(Long driverId) {
-        User user = userRepository.findById(driverId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        Driver driver = driverRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Driver not found"));
+        User user = requireDriver(driverId);
 
         if (user.getStatus() != UserStatus.PENDING) {
-            throw new RuntimeException("Only pending drivers can be rejected");
+            throw new RuntimeException("Only pending drivers can be rejected (this one is "
+                    + user.getStatus().name().toLowerCase() + ")");
         }
 
         user.setStatus(UserStatus.REJECTED);
         userRepository.save(user);
+    }
+
+    /** Guards the driver endpoints so they cannot be pointed at a customer's id. */
+    private User requireDriver(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getRole() != UserRole.DRIVER) {
+            throw new RuntimeException("User #" + userId + " is not a driver");
+        }
+        return user;
     }
 
     @Transactional
@@ -103,19 +113,25 @@ public class AdminService {
     public void suspendUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getRole() == UserRole.ADMIN) {
+            throw new RuntimeException("Administrator accounts cannot be suspended");
+        }
         user.setStatus(UserStatus.SUSPENDED);
         userRepository.save(user);
+        // An owner who can no longer sign in must not keep taking orders.
+        restaurantRepository.findByOwner(user).ifPresent(r -> {
+            if (r.getStatus() == RestaurantStatus.APPROVED) {
+                r.setStatus(RestaurantStatus.SUSPENDED);
+                restaurantRepository.save(r);
+            }
+        });
     }
 
     @Transactional
     public void activateUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        if (user.getStatus() == UserStatus.REJECTED || user.getStatus() == UserStatus.PENDING) {
-            user.setStatus(UserStatus.ACTIVE);
-        } else {
-            user.setStatus(UserStatus.ACTIVE);
-        }
+        user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
     }
 
@@ -123,9 +139,18 @@ public class AdminService {
     public void deleteUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getRole() == UserRole.ADMIN) {
+            throw new RuntimeException("Administrator accounts cannot be deleted");
+        }
         if (orderRepository.countByCustomer(user) > 0) {
             throw new RuntimeException("Cannot delete user with existing orders. Suspend instead.");
         }
+        // Deleting an owner while the restaurant row still points at them fails on a
+        // foreign key, which used to surface as an opaque 500.
+        if (restaurantRepository.findByOwner(user).isPresent()) {
+            throw new RuntimeException("Delete or reassign this owner's restaurant first, or suspend the account instead.");
+        }
+        driverRepository.findByUser(user).ifPresent(driverRepository::delete);
         userRepository.delete(user);
     }
 
@@ -175,16 +200,14 @@ public class AdminService {
 
     @Transactional
     public void banDriver(Long driverId) {
-        User user = userRepository.findById(driverId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = requireDriver(driverId);
         user.setStatus(UserStatus.SUSPENDED);
         userRepository.save(user);
     }
 
     @Transactional
     public void unbanDriver(Long driverId) {
-        User user = userRepository.findById(driverId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = requireDriver(driverId);
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
     }

@@ -7,10 +7,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link href="css/styles.css" rel="stylesheet">
+  <link href="css/styles.css?v=38" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 </head>
 <body>
   <div id="nav"></div>
+  <header class="topbar">
+    <div>
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="sub" id="pageSub">Overview of your restaurant</div>
+    </div>
+  </header>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="side-brand"><span class="logo"><i class="bi bi-shop-window"></i></span> Wagba</div>
@@ -20,25 +27,27 @@
       <a class="side-link" data-view="orders" onclick="navTo('orders')"><i class="bi bi-receipt"></i> Orders</a>
       <a class="side-link" data-view="profile" onclick="navTo('profile')"><i class="bi bi-person-gear"></i> Profile</a>
       <a class="side-link" data-view="earnings" onclick="navTo('earnings')"><i class="bi bi-wallet2"></i> Earnings</a>
+      <a class="side-link" data-view="settings" onclick="navTo('settings')"><i class="bi bi-gear"></i> Settings</a>
       <div class="side-foot">Run your kitchen with Wagba.</div>
     </aside>
 
     <div class="main">
-      <header class="topbar">
-        <div><h1 id="pageTitle">Dashboard</h1><div class="sub" id="pageSub">Overview of your restaurant</div></div>
-      </header>
       <div class="content">
         <div id="alertBox"></div>
         <div id="profileBox"></div>
 
         <div id="view-dashboard" class="view">
+          <div class="dash-hero">
+            <div class="dh-ic"><i class="bi bi-shop-window"></i></div>
+            <div><div class="dh-title">Run your kitchen</div><div class="dh-sub">Manage orders, your menu and grow your sales with Wagba.</div></div>
+          </div>
           <div class="d-flex justify-between align-center mb-3">
             <div class="muted small">Manage your storefront details customers see.</div>
             <button class="btn-soft btn-sm" onclick="navTo('profile')"><i class="bi bi-pencil-square"></i> Edit restaurant info</button>
           </div>
           <div id="dashStats" class="row g-3 mb-3"></div>
           <div class="card"><div class="card-body">
-            <h5 class="mb-3">Recent orders</h5>
+            <div class="section-head"><span class="sh-ic"><i class="bi bi-receipt"></i></span><div><h5 class="mb-0">Recent orders</h5></div></div>
             <div id="dashOrders"></div>
           </div></div>
         </div>
@@ -46,22 +55,28 @@
         <div id="view-menu" class="view d-none">
           <div class="row g-3">
             <div class="col-lg-4">
-              <div class="card"><div class="card-body">
-                <h5>Categories</h5>
+              <div class="card h-100"><div class="card-body">
+                <div class="d-flex align-center gap-2 mb-3">
+                  <span class="ic-tile"><i class="bi bi-tags"></i></span>
+                  <div><div class="fw-semibold">Categories</div><div class="muted small" id="catCount">—</div></div>
+                </div>
                 <form id="catForm" onsubmit="return false" class="d-flex gap-2 mb-3">
                   <input id="catName" class="form-control" placeholder="New category name">
-                  <button class="btn-brand" onclick="addCategory()"><i class="bi bi-plus-lg"></i></button>
+                  <button class="btn-brand" type="button" onclick="addCategory()"><i class="bi bi-plus-lg"></i></button>
                 </form>
-                <div id="catList"></div>
+                <div id="catList" class="cat-list"></div>
               </div></div>
             </div>
             <div class="col-lg-8">
-              <div class="card"><div class="card-body">
+              <div class="card h-100"><div class="card-body">
                 <div class="d-flex justify-between align-center mb-3">
-                  <h5 class="mb-0">Foods</h5>
-                  <button class="btn-brand btn-sm" onclick="openFoodModal(0)"><i class="bi bi-plus-lg"></i> Add Food</button>
+                  <div class="d-flex align-center gap-2">
+                    <span class="ic-tile"><i class="bi bi-egg-fried"></i></span>
+                    <div><div class="fw-semibold">Menu items</div><div class="muted small" id="foodCount">—</div></div>
+                  </div>
+                  <button class="btn-brand btn-sm" onclick="openFoodModal(0)"><i class="bi bi-plus-lg"></i> Add item</button>
                 </div>
-                <div class="scroll-x"><table class="table wagba"><thead><tr><th>Name</th><th>Price</th><th>Category</th><th></th></tr></thead><tbody id="foodRows"></tbody></table></div>
+                <div id="foodRows" class="food-grid"></div>
               </div></div>
             </div>
           </div>
@@ -74,7 +89,7 @@
           <div class="row g-3">
             <div class="col-lg-7">
               <div class="card"><div class="card-body">
-                <h5 class="mb-3"><i class="bi bi-person-gear"></i> Restaurant profile</h5>
+                <div class="section-head"><span class="sh-ic"><i class="bi bi-person-gear"></i></span><div><h5 class="mb-0">Restaurant profile</h5></div></div>
                 <div id="profileAlert"></div>
                 <div class="row g-2">
                   <div class="col-md-6"><label class="form-label">Name</label><input id="pfName" class="form-control"></div>
@@ -100,11 +115,22 @@
             <div class="col-lg-5">
               <div class="card"><div class="card-body">
                 <div class="d-flex justify-between align-center mb-2">
-                  <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Restaurant location</h5>
+                  <div class="section-head"><span class="sh-ic"><i class="bi bi-geo-alt"></i></span><div><h5 class="mb-0">Restaurant location</h5></div></div>
                   <button type="button" class="btn btn-sm btn-soft" onclick="useRestaurantLocation()"><i class="bi bi-geo-alt"></i> Use my location</button>
                 </div>
+                <div class="d-flex gap-2 mb-2">
+                  <input id="pfSearch" class="form-control" placeholder="Search your address (e.g. Tahrir, Cairo)">
+                  <button class="btn btn-soft btn-sm" type="button" onclick="searchRestaurantAddress()"><i class="bi bi-search"></i></button>
+                </div>
                 <div id="profileMap" class="map-picker"></div>
-                <div class="muted small mt-1">Tap the map to set your restaurant's location.</div>
+                <div class="muted small mt-1">Search your address or tap the map to drop your restaurant's pin.</div>
+                <div class="row g-2 mt-3">
+                  <div class="col-6"><label class="form-label">City</label><input id="pfCity" class="form-control"></div>
+                  <div class="col-6"><label class="form-label">Street</label><input id="pfStreet" class="form-control"></div>
+                  <div class="col-4"><label class="form-label">Building</label><input id="pfBuilding" class="form-control"></div>
+                  <div class="col-4"><label class="form-label">Apartment</label><input id="pfApartment" class="form-control"></div>
+                  <div class="col-4"><label class="form-label">Landmark</label><input id="pfDetails" class="form-control"></div>
+                </div>
               </div></div>
             </div>
           </div>
@@ -115,44 +141,69 @@
           <div id="walletCard" class="card mb-3"><div class="card-body d-flex align-center gap-3">
             <div class="logo-mark" style="width:54px;height:54px;font-size:1.4rem;background:var(--gradient);color:#fff;border-radius:14px;display:grid;place-items:center"><i class="bi bi-wallet2"></i></div>
             <div><div class="muted small">Wallet balance</div><div class="h3 mb-0 gradient-text" id="walletBalance">—</div></div>
+            <button class="btn btn-brand btn-sm ms-auto" onclick="openWithdraw()"><i class="bi bi-cash-coin"></i> Withdraw</button>
           </div></div>
           <div class="card"><div class="card-body">
             <h5 class="mb-3"><i class="bi bi-receipt"></i> Wallet transactions</h5>
             <div id="walletTxns" class="scroll-x"><div class="muted small">Loading…</div></div>
           </div></div>
         </div>
+
+        <!-- SETTINGS -->
+        <div id="view-settings" class="view d-none"></div>
       </div>
     </div>
   </div>
 
   <!-- Food modal -->
   <div class="modal fade" id="foodModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Food item</h5><button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button></div>
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-egg-fried me-2"></i>Food item</h5><button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button></div>
         <div class="modal-body">
           <div id="foodAlert"></div>
           <input type="hidden" id="fId">
-          <div class="mb-2"><label class="form-label">Name</label><input id="fName" class="form-control"></div>
-          <div class="mb-2"><label class="form-label">Description</label><input id="fDesc" class="form-control"></div>
-          <div class="row g-2">
-            <div class="col-6"><label class="form-label">Price (EGP)</label><input id="fPrice" type="number" step="0.01" class="form-control"></div>
-            <div class="col-6"><label class="form-label">Category</label><select id="fCat" class="form-select"></select></div>
-          </div>
-          <div class="row g-2 mt-1">
-            <div class="col-6"><label class="form-label">Offer price (EGP, optional)</label><input id="fDiscount" type="number" step="0.01" class="form-control" placeholder="e.g. 8"></div>
-            <div class="col-6 d-flex align-end"><span class="muted small">Leave empty for no offer. Shown struck-through to customers.</span></div>
-          </div>
-          <div class="mb-2 mt-2">
-            <label class="form-label">Image URL</label>
-            <input id="fImg" class="form-control">
-            <div class="mt-2 d-flex gap-2 align-center">
-              <input type="file" id="fImgFile" accept="image/*" class="form-control form-control-sm">
-              <button class="btn btn-sm btn-soft" type="button" onclick="uploadImage('fImg','fImgFile')"><i class="bi bi-upload"></i> Upload</button>
+          <div class="fm-grid">
+            <div class="fm-full">
+              <label class="form-label">Name</label>
+              <input id="fName" class="form-control" placeholder="e.g. Beef Burger">
+            </div>
+            <div class="fm-full">
+              <label class="form-label">Description</label>
+              <input id="fDesc" class="form-control" placeholder="Short, tasty description">
+            </div>
+            <div>
+              <label class="form-label">Price (EGP)</label>
+              <input id="fPrice" type="number" step="0.01" class="form-control" placeholder="0.00">
+            </div>
+            <div>
+              <label class="form-label">Category</label>
+              <select id="fCat" class="form-select"></select>
+            </div>
+            <div>
+              <label class="form-label">Offer price (EGP)</label>
+              <input id="fDiscount" type="number" step="0.01" class="form-control" placeholder="Optional">
+            </div>
+            <div class="d-flex align-items-center">
+              <span class="muted small"><i class="bi bi-info-circle"></i> Leave empty for no discount.</span>
+            </div>
+            <div class="fm-full">
+              <label class="form-label">Image</label>
+              <input id="fImg" class="form-control" placeholder="https://…">
+              <div class="mt-2 d-flex gap-2 align-items-center">
+                <input type="file" id="fImgFile" accept="image/*" class="form-control form-control-sm">
+                <button class="btn btn-sm btn-soft flex-shrink-0" type="button" onclick="uploadImage('fImg','fImgFile')"><i class="bi bi-upload"></i> Upload</button>
+              </div>
+            </div>
+            <div class="fm-full fm-toggle">
+              <label class="form-label mb-0">Available to customers</label>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="fAvailable" checked>
+              </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-brand" onclick="saveFood()">Save</button></div>
+        <div class="modal-footer"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-brand" onclick="saveFood()">Save item</button></div>
       </div>
     </div>
   </div>
@@ -186,8 +237,26 @@
     </div>
   </div>
 
+  <!-- Withdraw modal -->
+  <div class="modal fade" id="withdrawModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i>Withdraw to Stripe</h5><button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button></div>
+        <div class="modal-body">
+          <div id="withdrawAlert"></div>
+          <div id="wdDev" class="alert alert-warning"><i class="bi bi-info-circle"></i> Demo mode: no Stripe key configured, so the payout is simulated and your wallet is debited.</div>
+          <label class="form-label">Amount (EGP)</label>
+          <input id="wdAmount" type="number" step="0.01" min="0" class="form-control" placeholder="0.00">
+          <div class="muted small mt-1">Available: <span id="wdAvail">—</span></div>
+        </div>
+        <div class="modal-footer"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-brand" onclick="withdrawEarnings()">Withdraw</button></div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="js/common.js"></script>
-  <script src="js/owner.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/common.js?v=38"></script>
+  <script src="js/owner.js?v=30"></script>
 </body>
 </html>

@@ -28,4 +28,17 @@ stripe.api.key=YOUR_STRIPE_SECRET_KEY
 stripe.publishable.key=YOUR_STRIPE_PUBLISHABLE_KEY
 stripe.currency=egp
 
+# File uploads (local storage)
+upload.dir=uploads
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=10MB
+
+# Delivery fee / driver earning policy
+# Fallback fee used when a restaurant has not set its own.
+wagba.delivery.fee=15
+# Share of the delivery fee credited to the courier.
+wagba.delivery.driver-share=0.85
+# Commission the platform keeps from the restaurant's food revenue.
+wagba.platform.fee-rate=0.10
+
 server.port=8081

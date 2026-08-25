@@ -17,19 +17,24 @@ public class EmailVerificationService {
 	}
 	
 	@Transactional
-	public void verifyEmail(String token)
+	public User verifyEmail(String token)
 	{
-		User user = userRepository.findByVerificationToken(token).orElseThrow(() -> new IllegalArgumentException("Invalid verification token"));
-		
+		if (token == null || token.isBlank()) {
+			throw new IllegalArgumentException("Verification code is required");
+		}
+
+		User user = userRepository.findByVerificationToken(token.trim())
+				.orElseThrow(() -> new IllegalArgumentException("Invalid or already used verification code"));
+
 		if (user.getVerificationTokenExpiry() == null ||
 				user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
-			throw new IllegalArgumentException("Verification token has expired");
+			throw new IllegalArgumentException("Verification code has expired. Please register again.");
 		}
-		
+
 		user.setEmailVerified(true);
 		user.setVerificationToken(null);
 		user.setVerificationTokenExpiry(null);
-		
-		userRepository.save(user);
+
+		return userRepository.save(user);
 	}
 }

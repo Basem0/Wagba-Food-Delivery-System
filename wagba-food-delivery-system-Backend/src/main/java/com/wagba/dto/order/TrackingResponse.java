@@ -8,6 +8,8 @@ public record TrackingResponse(
         DriverTrackingInfo driver,
         String createdAt,
         Double customerLatitude,
-        Double customerLongitude
+        Double customerLongitude,
+        Double restaurantLatitude,
+        Double restaurantLongitude
 ) {
 }

@@ -18,12 +18,9 @@ import com.wagba.service.OrderService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -105,7 +102,9 @@ public class OrderController {
                 driverInfo,
                 order.getCreatedAt() != null ? order.getCreatedAt().toString() : null,
                 order.getCustomerLatitude(),
-                order.getCustomerLongitude()
+                order.getCustomerLongitude(),
+                order.getRestaurant() != null ? order.getRestaurant().getLatitude() : null,
+                order.getRestaurant() != null ? order.getRestaurant().getLongitude() : null
         );
     }
 }

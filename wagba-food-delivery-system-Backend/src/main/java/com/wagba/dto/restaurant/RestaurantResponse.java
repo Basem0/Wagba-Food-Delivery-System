@@ -18,6 +18,11 @@ public record RestaurantResponse(
         BigDecimal minOrderTotal,
         Double avgRating,
         String phone,
+        String city,
+        String street,
+        String buildingNumber,
+        String apartment,
+        String details,
         Double latitude,
         Double longitude,
         boolean hasOffers

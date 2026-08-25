@@ -1,5 +1,6 @@
 package com.wagba.dto.auth;
 
+import com.wagba.entity.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,6 +17,14 @@ public class RegisterRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+
+    /**
+     * Optional. When present it is remembered and applied automatically once the
+     * email is verified, so the user picks a role only once.
+     */
+    private UserRole role;
+
+    private String phone;
 
     public RegisterRequest() {
     }
@@ -48,5 +57,21 @@ public class RegisterRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 }

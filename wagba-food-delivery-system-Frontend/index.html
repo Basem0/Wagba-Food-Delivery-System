@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link href="css/styles.css" rel="stylesheet">
+  <link href="css/styles.css?v=38" rel="stylesheet">
 </head>
 <body>
 
@@ -15,9 +15,10 @@
 <nav class="landing-nav">
   <a class="brand" href="index.html"><span class="logo"><i class="bi bi-egg-fried"></i></span> Wagba</a>
   <div class="links">
-    <a href="#features">Features</a>
+    <a href="#cuisines">Cuisines</a>
     <a href="#how">How it works</a>
-    <a href="#roles">Who is it for</a>
+    <a href="#why">Why Wagba</a>
+    <a href="#faq">FAQ</a>
   </div>
   <div class="spacer"></div>
   <button class="btn-ghost" onclick="openAuth('login')"><i class="bi bi-box-arrow-in-right"></i> Login</button>
@@ -29,26 +30,43 @@
   <div class="hero-grid">
     <div>
       <span class="badge-soft"><i class="bi bi-stars"></i> Hot meals, delivered fast</span>
-      <h1 class="mt-3">Your favourite food, <span class="gradient-text">one tap away</span></h1>
-      <p class="lead">Discover the best local restaurants, order in seconds, and track your driver live on the map. Wagba connects hungry customers with great kitchens and reliable couriers.</p>
+      <h1 class="mt-3">Hungry? <span style="text-decoration:underline; text-underline-offset:6px; text-decoration-color:rgba(255,255,255,.55)">Wagba</span> it.</h1>
+      <p class="lead">Discover the best local kitchens, order in seconds, and watch your driver live on the map. Fresh food, fast — right to your door.</p>
       <div class="hero-search">
-        <i class="bi bi-geo-alt" style="align-self:center;color:var(--muted)"></i>
+        <i class="bi bi-geo-alt" style="align-self:center;color:var(--brand-dark)"></i>
         <input id="heroSearch" class="form-control" placeholder="Enter your delivery address…">
         <button class="btn-brand" onclick="openAuth('register')">Find Food</button>
       </div>
-      <div class="mt-3 d-flex gap-3 small muted">
-        <span><i class="bi bi-shield-check text-success"></i> Secure payments</span>
-        <span><i class="bi bi-speedometer2 text-success"></i> Live tracking</span>
-        <span><i class="bi bi-emoji-smile text-success"></i> 1000+ dishes</span>
+      <div class="mt-3 d-flex gap-3 small muted" style="color:rgba(255,255,255,.92)">
+        <span><i class="bi bi-shield-check" style="color:#fff"></i> Secure payments</span>
+        <span><i class="bi bi-speedometer2" style="color:#fff"></i> Live tracking</span>
+        <span><i class="bi bi-emoji-smile" style="color:#fff"></i> 1000+ dishes</span>
       </div>
     </div>
-    <div class="hero-art">
-      <i class="bi bi-egg-fried"></i>
+
+    <!-- App preview (phone mockup) -->
+    <div class="hero-phone">
+      <div class="hp-screen">
+        <div class="hp-top"><span class="hp-dot"></span> Wagba</div>
+        <div class="hp-card">
+          <div class="hp-cover"><i class="bi bi-egg-fried"></i></div>
+          <div class="hp-body">
+            <div class="hp-name">Burger House</div>
+            <div class="hp-meta">★ 4.8 · 20–30 min · 10 EGP delivery</div>
+            <div class="hp-row"><span class="hp-price">from 35 EGP</span><span class="hp-btn"><i class="bi bi-plus"></i></span></div>
+          </div>
+        </div>
+        <div class="hp-track">
+          <div class="hp-track-head"><span class="live-dot"></span> Driver on the way</div>
+          <div class="hp-map"><i class="bi bi-geo-alt"></i></div>
+          <div class="hp-eta">Arriving in 12 min</div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
 
-<!-- Stats strip -->
+<!-- Stats strip (overlaps hero) -->
 <section class="stats-strip">
   <div class="wrap">
     <div class="stat"><div class="num">1.2k+</div><div class="lbl">Restaurants</div></div>
@@ -59,27 +77,30 @@
   </div>
 </section>
 
-<!-- Features -->
-<section class="section" id="features">
-  <h2>Built for everyone at the table</h2>
-  <p class="lead-c">A complete platform — from the first craving to the last bite.</p>
-  <div class="feat-grid">
-    <div class="feat">
-      <div class="ic"><i class="bi bi-shop"></i></div>
-      <h4>Discover restaurants</h4>
-      <p>Browse rich menus with photos, ratings and delivery times. Filter by cuisine, price and what's open now.</p>
-    </div>
-    <div class="feat">
-      <div class="ic"><i class="bi bi-lightning-charge"></i></div>
-      <h4>Order in seconds</h4>
-      <p>Add items to your cart, apply coupons and checkout with a smooth, secure flow.</p>
-    </div>
-    <div class="feat">
-      <div class="ic"><i class="bi bi-geo-alt"></i></div>
-      <h4>Track live</h4>
-      <p>Watch your driver move on the map in real time and know exactly when to open the door.</p>
-    </div>
+<!-- Cuisines -->
+<section class="section" id="cuisines" style="padding-top:48px;padding-bottom:36px">
+  <div style="text-align:center">
+    <h2>Browse by craving</h2>
+    <p class="lead-c">Pick a mood — we've got the kitchen for it.</p>
   </div>
+  <div class="cat-tiles">
+    <div class="cat-tile" onclick="openAuth('register')"><span class="ct-ic"><i class="bi bi-egg-fried"></i></span> <b>Burgers</b></div>
+    <div class="cat-tile" onclick="openAuth('register')"><span class="ct-ic"><i class="bi bi-pizza"></i></span> <b>Pizza</b></div>
+    <div class="cat-tile" onclick="openAuth('register')"><span class="ct-ic"><i class="bi bi-bicycle"></i></span> <b>Sushi</b></div>
+    <div class="cat-tile" onclick="openAuth('register')"><span class="ct-ic"><i class="bi bi-cup-straw"></i></span> <b>Desserts</b></div>
+    <div class="cat-tile" onclick="openAuth('register')"><span class="ct-ic"><i class="bi bi-leaf"></i></span> <b>Healthy</b></div>
+    <div class="cat-tile" onclick="openAuth('register')"><span class="ct-ic"><i class="bi bi-cup-hot"></i></span> <b>Coffee</b></div>
+    <div class="cat-tile" onclick="openAuth('register')"><span class="ct-ic"><i class="bi bi-egg"></i></span> <b>Breakfast</b></div>
+  </div>
+</section>
+
+<!-- Popular near you (loaded from API) -->
+<section class="section" id="featured" style="padding-top:20px">
+  <div class="d-flex justify-between align-center mb-3">
+    <div><h2>Popular near you</h2><p class="lead-c">Hand-picked kitchens our customers love right now.</p></div>
+    <button class="btn-brand" onclick="openAuth('register')"><i class="bi bi-compass"></i> Explore all</button>
+  </div>
+  <div id="featuredList" class="rest-grid"></div>
 </section>
 
 <!-- How it works -->
@@ -87,59 +108,22 @@
   <h2>How Wagba works</h2>
   <p class="lead-c">Three simple steps to a full stomach.</p>
   <div class="steps">
-    <div class="step-card">
-      <div class="num">1</div>
-      <h5>Pick your food</h5>
-      <p>Choose a restaurant, build your cart and apply any coupon you have.</p>
-    </div>
-    <div class="step-card">
-      <div class="num">2</div>
-      <h5>Pay & confirm</h5>
-      <p>Checkout with your address. The kitchen gets the order instantly.</p>
-    </div>
-    <div class="step-card">
-      <div class="num">3</div>
-      <h5>Receive & enjoy</h5>
-      <p>A driver picks it up, shares live location, and delivers to your door.</p>
-    </div>
+    <div class="step-card"><div class="num">1</div><h5>Pick your food</h5><p>Choose a restaurant, build your cart and apply any coupon you have.</p></div>
+    <div class="step-card"><div class="num">2</div><h5>Pay & confirm</h5><p>Checkout with your address. The kitchen gets the order instantly.</p></div>
+    <div class="step-card"><div class="num">3</div><h5>Receive & enjoy</h5><p>A driver picks it up, shares live location, and delivers to your door.</p></div>
   </div>
 </section>
 
-<!-- Roles -->
-<section class="section" id="roles">
-  <h2>One platform, four roles</h2>
-  <p class="lead-c">Whatever your seat at the table, Wagba has a dashboard for you.</p>
+<!-- Why Wagba -->
+<section class="section" id="why">
+  <h2>Built for everyone at the table</h2>
+  <p class="lead-c">A complete platform — from the first craving to the last bite.</p>
   <div class="feat-grid">
-    <div class="feat">
-      <div class="ic"><i class="bi bi-person"></i></div>
-      <h4>Customer</h4>
-      <p>Browse, order, pay, review and track every delivery live.</p>
-    </div>
-    <div class="feat">
-      <div class="ic"><i class="bi bi-shop-window"></i></div>
-      <h4>Restaurant Owner</h4>
-      <p>Manage your menu, accept orders and update their status in real time.</p>
-    </div>
-    <div class="feat">
-      <div class="ic"><i class="bi bi-bicycle"></i></div>
-      <h4>Driver</h4>
-      <p>Pick up available deliveries, share your location and earn.</p>
-    </div>
-    <div class="feat">
-      <div class="ic"><i class="bi bi-sliders"></i></div>
-      <h4>Admin</h4>
-      <p>Approve restaurants & drivers, manage users and launch coupons.</p>
-    </div>
+    <div class="feat"><div class="ic"><i class="bi bi-shop"></i></div><h4>Discover restaurants</h4><p>Browse rich menus with photos, ratings and delivery times. Filter by cuisine, price and what's open now.</p></div>
+    <div class="feat"><div class="ic"><i class="bi bi-lightning-charge"></i></div><h4>Order in seconds</h4><p>Add items to your cart, apply coupons and checkout with a smooth, secure flow.</p></div>
+    <div class="feat"><div class="ic"><i class="bi bi-geo-alt"></i></div><h4>Track live</h4><p>Watch your driver move on the map in real time and know exactly when to open the door.</p></div>
+    <div class="feat"><div class="ic"><i class="bi bi-wallet2"></i></div><h4>Pay your way</h4><p>Card payments via Stripe or cash on delivery — plus wallet & coupon support.</p></div>
   </div>
-</section>
-
-<!-- Featured restaurants (loaded from API) -->
-<section class="section" id="featured">
-  <div class="d-flex justify-between align-center mb-3">
-    <div><h2>Popular near you</h2><p class="lead-c">Hand-picked kitchens our customers love right now.</p></div>
-    <button class="btn-brand" onclick="openAuth('register')"><i class="bi bi-compass"></i> Explore all</button>
-  </div>
-  <div id="featuredList" class="rest-grid"></div>
 </section>
 
 <!-- Testimonials -->
@@ -153,8 +137,17 @@
   </div>
 </section>
 
-<!-- FAQ -->
+<!-- CTA -->
 <section class="section">
+  <div class="cta">
+    <h2>Ready to order your first meal?</h2>
+    <p>Create a free account and explore the kitchens near you.</p>
+    <button class="btn-brand" style="background:#fff;color:var(--brand-dark)" onclick="openAuth('register')"><i class="bi bi-rocket-takeoff"></i> Get Started Free</button>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" style="padding-top:20px">
   <h2>Questions, answered</h2>
   <p class="lead-c">Everything you need to know before your first order.</p>
   <div class="faq">
@@ -166,15 +159,6 @@
   </div>
 </section>
 
-<!-- CTA -->
-<section class="section">
-  <div class="cta">
-    <h2>Ready to order your first meal?</h2>
-    <p>Create a free account and explore the kitchens near you.</p>
-    <button class="btn-brand" style="background:#fff;color:var(--brand-dark)" onclick="openAuth('register')"><i class="bi bi-rocket-takeoff"></i> Get Started Free</button>
-  </div>
-</section>
-
 <!-- Footer -->
 <footer class="footer">
   <div class="grid">
@@ -182,7 +166,7 @@
       <div class="d-flex align-center gap-2 mb-2"><span class="logo" style="width:34px;height:34px;font-size:1rem"><i class="bi bi-egg-fried"></i></span> <b style="font-family:var(--display);font-size:1.1rem">Wagba</b></div>
       <p class="small">Food delivery, reinvented. Bringing local kitchens and hungry people together — fast, fresh and tracked.</p>
     </div>
-    <div><h6>Product</h6><a href="#features">Features</a><a href="#how">How it works</a><a href="#roles">Roles</a></div>
+    <div><h6>Product</h6><a href="#cuisines">Cuisines</a><a href="#how">How it works</a><a href="#why">Why Wagba</a></div>
     <div><h6>Company</h6><a href="#">About</a><a href="#">Careers</a><a href="#">Contact</a></div>
     <div><h6>Legal</h6><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></div>
   </div>
@@ -209,42 +193,57 @@
 
         <!-- Login -->
         <div id="loginView">
-          <div class="mb-2"><label class="form-label">Email</label><input id="lEmail" class="form-control" placeholder="you@example.com"></div>
-          <div class="mb-3"><label class="form-label">Password</label><input id="lPass" type="password" class="form-control" placeholder="••••••••"></div>
-          <button class="btn-brand w-100" onclick="doLogin()">Login</button>
+          <div class="mb-2"><label class="form-label" for="lEmail">Email</label><input id="lEmail" type="email" autocomplete="email" class="form-control" placeholder="you@example.com"></div>
+          <div class="mb-3"><label class="form-label" for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password" class="form-control" placeholder="••••••••"></div>
+          <button class="btn-brand w-100" onclick="doLogin(event)">Login</button>
           <div class="mt-2 text-center small"><a href="#" onclick="setAuthTab('forgot');return false;">Forgot password?</a></div>
         </div>
 
         <!-- Register -->
         <div id="registerView" class="d-none">
-          <div class="mb-2"><label class="form-label">Full name</label><input id="rName" class="form-control" placeholder="Ahmed"></div>
-          <div class="mb-2"><label class="form-label">Email</label><input id="rEmail" class="form-control" placeholder="you@example.com"></div>
-          <div class="mb-2"><label class="form-label">Password</label><input id="rPass" type="password" class="form-control" placeholder="At least 8 characters"></div>
-          <div class="mb-3"><label class="form-label">I want to</label>
+          <div class="mb-2"><label class="form-label" for="rName">Full name</label><input id="rName" autocomplete="name" class="form-control" placeholder="Ahmed"></div>
+          <div class="mb-2"><label class="form-label" for="rEmail">Email</label><input id="rEmail" type="email" autocomplete="email" class="form-control" placeholder="you@example.com"></div>
+          <div class="mb-2"><label class="form-label" for="rPass">Password</label><input id="rPass" type="password" autocomplete="new-password" class="form-control" placeholder="At least 8 characters">
+            <div class="form-hint">Minimum 8 characters.</div></div>
+          <div class="mb-3"><label class="form-label" for="rRole">I want to</label>
             <select id="rRole" class="form-select">
               <option value="CUSTOMER">Order food (Customer)</option>
               <option value="RESTAURANT_OWNER">Open a restaurant</option>
               <option value="DRIVER">Deliver with Wagba</option>
             </select></div>
-          <button class="btn-brand w-100" onclick="doRegister()">Create account</button>
+          <button class="btn-brand w-100" onclick="doRegister(event)">Create account</button>
         </div>
 
         <!-- Verify -->
         <div id="verifyView" class="d-none">
-          <p class="text-muted small">We sent a verification code to your email. Paste it below to activate your account.</p>
-          <div class="mb-2"><label class="form-label">Verification code</label><input id="vToken" class="form-control" placeholder="code from email / DB"></div>
-          <button class="btn-brand w-100" onclick="doVerify()">Verify email</button>
+          <p class="text-muted small">We sent a verification code to <strong id="vEmailHint">your email</strong>. Paste it below to activate your account.</p>
+          <div class="mb-2"><label class="form-label" for="vToken">Verification code</label><input id="vToken" class="form-control" placeholder="Paste the code from the email"></div>
+          <button class="btn-brand w-100" onclick="doVerify(event)">Verify email</button>
+          <div class="mt-2 text-center small"><a href="#" onclick="setAuthTab('login');return false;">Already verified? Log in</a></div>
+        </div>
+
+        <!-- Role selection (only when the server says the role is still unset) -->
+        <div id="roleView" class="d-none">
+          <p class="text-muted small">Your email is verified. Tell us how you want to use Wagba.</p>
+          <div class="mb-3"><label class="form-label" for="sRole">I want to</label>
+            <select id="sRole" class="form-select">
+              <option value="CUSTOMER">Order food (Customer)</option>
+              <option value="RESTAURANT_OWNER">Open a restaurant</option>
+              <option value="DRIVER">Deliver with Wagba</option>
+            </select></div>
+          <button class="btn-brand w-100" onclick="doSelectRole(event)">Continue</button>
         </div>
 
         <!-- Forgot -->
         <div id="forgotView" class="d-none">
-          <div class="mb-2"><label class="form-label">Email</label><input id="fEmail" class="form-control" placeholder="you@example.com"></div>
-          <button class="btn-brand w-100" onclick="doForgot()">Send reset link</button>
+          <div class="mb-2"><label class="form-label" for="fEmail">Email</label><input id="fEmail" type="email" autocomplete="email" class="form-control" placeholder="you@example.com"></div>
+          <button class="btn-brand w-100" onclick="doForgot(event)">Send reset code</button>
           <div id="resetBox" class="mt-3 d-none">
-            <div class="mb-2"><label class="form-label">Reset code</label><input id="fToken" class="form-control" placeholder="code"></div>
-            <div class="mb-2"><label class="form-label">New password</label><input id="fNew" type="password" class="form-control"></div>
-            <button class="btn-brand w-100" onclick="doReset()">Reset password</button>
+            <div class="mb-2"><label class="form-label" for="fToken">Reset code</label><input id="fToken" class="form-control" placeholder="Paste the code from the email"></div>
+            <div class="mb-2"><label class="form-label" for="fNew">New password</label><input id="fNew" type="password" autocomplete="new-password" class="form-control" placeholder="At least 8 characters"></div>
+            <button class="btn-brand w-100" onclick="doReset(event)">Reset password</button>
           </div>
+          <div class="mt-2 text-center small"><a href="#" onclick="setAuthTab('login');return false;">Back to login</a></div>
         </div>
       </div>
     </div>
@@ -252,89 +251,186 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/common.js"></script>
+<script src="js/common.js?v=38"></script>
 <script>
   let _pendingEmail = '';
+  let _pendingRole = '';
+
+  // Already signed in? Go straight to the dashboard instead of showing the pitch.
+  (function resumeSession() {
+    if (!getToken()) return;
+    api('/auth/me').then(me => { setUser(me); location.href = dashFor(me.role); }).catch(() => clearAuth());
+  })();
+
   // ---- featured restaurants (public) ----
   (async function loadFeatured() {
     const el = document.getElementById('featuredList');
     if (!el) return;
+    el.innerHTML = '<div class="skeleton" style="height:104px;border-radius:var(--radius)"></div>'.repeat(3);
     try {
-      const page = await api('/restaurants?page=0&size=6');
+      const page = await api('/restaurants?page=0&size=6', 'GET', null, false);
       const list = page.content || [];
       if (!list.length) { el.innerHTML = '<p class="muted">No restaurants yet — be the first to join!</p>'; return; }
       el.innerHTML = list.map(r => `
         <div class="rest-card" onclick="openAuth('register')">
-          <div class="cover">${r.imageUrl ? `<img src="${escapeHtml(r.imageUrl)}" onerror="onImgError(this,'${escapeHtml(r.name)}')">` : `<i class="bi bi-shop"></i>`}</div>
-          <div class="body">
-            <div class="d-flex justify-between align-center">
-              <div class="name">${escapeHtml(r.name)}</div>
-              ${r.avgRating ? `<span class="small fw-semibold"><i class="bi bi-star-fill text-warning"></i> ${r.avgRating}</span>` : ''}
+          <div class="rc-logo">${r.imageUrl ? `<img src="${escapeHtml(r.imageUrl)}" alt="" onerror="onImgError(this,'${escapeHtml(r.name)}')">` : `<i class="bi bi-shop"></i>`}</div>
+          <div class="rc-body">
+            <div class="rc-line">
+              <div class="rc-name">${escapeHtml(r.name)}</div>
+              ${r.cuisine ? `<span class="rc-cuisine">${escapeHtml(r.cuisine)}</span>` : ''}
             </div>
-            <div class="desc muted small text-truncate">${escapeHtml(r.description || 'Delicious food, delivered fast')}</div>
-            <div class="meta">
-              ${r.cuisine ? `<span><i class="bi bi-tags"></i> ${escapeHtml(r.cuisine)}</span>` : ''}
-              ${r.deliveryFee != null ? `<span><i class="bi bi-bicycle"></i> ${money(r.deliveryFee)}</span>` : ''}
-              ${r.minOrderTotal ? `<span><i class="bi bi-bag"></i> min ${money(r.minOrderTotal)}</span>` : ''}
+            <div class="rc-meta">
+              <span>${r.avgRating ? `<i class="bi bi-star-fill text-warning"></i> ${Number(r.avgRating).toFixed(1)}` : '<i class="bi bi-star"></i> New on Wagba'}</span>
+              <span><i class="bi bi-truck"></i> ${r.deliveryFee != null ? money(r.deliveryFee) : 'Delivery fee varies'}</span>
+              <span><i class="bi bi-bag"></i> ${r.minOrderTotal ? `min ${money(r.minOrderTotal)}` : 'No minimum order'}</span>
             </div>
-            <div class="mt-2">${r.status ? statusBadge(r.status.name || r.status) : ''}</div>
           </div>
+          <button class="rc-view" type="button" aria-label="Open sign up"><i class="bi bi-arrow-right"></i></button>
         </div>`).join('');
-    } catch (e) { el.innerHTML = '<p class="muted">Could not load restaurants right now.</p>'; }
+    } catch (e) {
+      el.innerHTML = `<p class="muted">${escapeHtml(e.message)}</p>`;
+    }
   })();
 
   function openAuth(tab) { setAuthTab(tab || 'login'); new bootstrap.Modal(document.getElementById('authModal')).show(); }
   function setAuthTab(tab) {
-    ['login','register','verify','forgot'].forEach(t => document.getElementById(t+'View').classList.toggle('d-none', t!==tab));
-    document.getElementById('tabLogin').classList.toggle('active', tab==='login');
-    document.getElementById('tabRegister').classList.toggle('active', tab==='register');
-    document.getElementById('authTitle').textContent = tab==='register' ? 'Create your account' : tab==='forgot' ? 'Reset password' : 'Welcome back';
+    ['login','register','verify','forgot','role'].forEach(t => {
+      const v = document.getElementById(t + 'View');
+      if (v) v.classList.toggle('d-none', t !== tab);
+    });
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+    document.getElementById('authTitle').textContent =
+      tab === 'register' ? 'Create your account'
+      : tab === 'forgot' ? 'Reset password'
+      : tab === 'verify' ? 'Verify your email'
+      : tab === 'role' ? 'Choose your account type'
+      : 'Welcome back';
     clearAlert('alertBox');
   }
-  async function doLogin() {
-    clearAlert('alertBox');
-    try {
-      const res = await api('/auth/login','POST',{ email: document.getElementById('lEmail').value, password: document.getElementById('lPass').value }, false);
-      await afterAuth(res, true);
-    } catch(e){ showAlert('alertBox','danger',e.message); }
+
+  /** Disables a button while its request is in flight so it cannot be double-submitted. */
+  async function withBusy(btn, label, fn) {
+    if (!btn || btn.disabled) return;
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${label}`;
+    try { await fn(); }
+    finally { btn.disabled = false; btn.innerHTML = original; }
   }
-  async function doRegister() {
+  function val(id) { const e = document.getElementById(id); return e ? e.value.trim() : ''; }
+  function isEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+
+  async function doLogin(ev) {
     clearAlert('alertBox');
-    const body = { name:document.getElementById('rName').value, email:document.getElementById('rEmail').value,
-      password:document.getElementById('rPass').value, role:document.getElementById('rRole').value };
-    try {
-      await api('/auth/register','POST',body,false);
-      _pendingEmail = body.email;
-      showAlert('alertBox','success','Account created! Verify your email to continue.');
-      setAuthTab('verify');
-    } catch(e){ showAlert('alertBox','danger',e.message); }
+    const email = val('lEmail'), password = document.getElementById('lPass').value;
+    if (!isEmail(email)) { showAlert('alertBox', 'warning', 'Enter a valid email address'); return; }
+    if (!password) { showAlert('alertBox', 'warning', 'Enter your password'); return; }
+    await withBusy(ev && ev.target.closest('button'), 'Signing in…', async () => {
+      try {
+        // POST /auth/login returns an AuthResponse object, not a bare token.
+        const res = await api('/auth/login', 'POST', { email, password }, false);
+        await afterAuth(res, true);
+      } catch (e) { showAlert('alertBox', 'danger', e.message); }
+    });
   }
-  async function doVerify() {
+
+  async function doRegister(ev) {
     clearAlert('alertBox');
-    try {
-      await api('/auth/verify-email','POST',{ email:_pendingEmail, token:document.getElementById('vToken').value }, false);
-      showAlert('alertBox','success','Email verified! Now pick your role.');
-      await api('/auth/select-role','POST',{ email:_pendingEmail, role:document.getElementById('rRole').value }, false);
-      showAlert('alertBox','success','Role selected — please login.');
-      setAuthTab('login');
-    } catch(e){ showAlert('alertBox','danger',e.message); }
+    const body = { name: val('rName'), email: val('rEmail'),
+                   password: document.getElementById('rPass').value, role: val('rRole') };
+    if (!body.name) { showAlert('alertBox', 'warning', 'Enter your full name'); return; }
+    if (!isEmail(body.email)) { showAlert('alertBox', 'warning', 'Enter a valid email address'); return; }
+    if (body.password.length < 8) { showAlert('alertBox', 'warning', 'Password must be at least 8 characters'); return; }
+    await withBusy(ev && ev.target.closest('button'), 'Creating…', async () => {
+      try {
+        await api('/auth/register', 'POST', body, false);
+        _pendingEmail = body.email;
+        _pendingRole = body.role;
+        const hint = document.getElementById('vEmailHint');
+        if (hint) hint.textContent = body.email;
+        showAlert('alertBox', 'success', 'Account created! Check your inbox for the verification code.');
+        setAuthTab('verify');
+      } catch (e) { showAlert('alertBox', 'danger', e.message); }
+    });
   }
-  async function doForgot() {
+
+  async function doVerify(ev) {
     clearAlert('alertBox');
-    try {
-      await api('/auth/forgot-password','POST',{ email:document.getElementById('fEmail').value }, false);
-      showAlert('alertBox','success','If the email exists, a reset code was sent.');
-      document.getElementById('resetBox').classList.remove('d-none');
-    } catch(e){ showAlert('alertBox','danger',e.message); }
+    const token = val('vToken');
+    if (!token) { showAlert('alertBox', 'warning', 'Paste the code from your email'); return; }
+    await withBusy(ev && ev.target.closest('button'), 'Verifying…', async () => {
+      try {
+        // The role chosen at sign-up is applied server-side during verification, so
+        // select-role is only needed when the server says it still is.
+        const res = await api('/auth/verify-email', 'POST', { email: _pendingEmail, token }, false);
+        if (res && res.roleSelectionRequired) {
+          if (_pendingRole) {
+            await api('/auth/select-role', 'POST', { email: _pendingEmail, role: _pendingRole }, false);
+          } else {
+            showAlert('alertBox', 'success', 'Email verified. Pick what you want to do on Wagba.');
+            setAuthTab('role');
+            return;
+          }
+        }
+        showAlert('alertBox', 'success', (res && res.message) || 'Email verified. You can log in now.');
+        const le = document.getElementById('lEmail'); if (le) le.value = _pendingEmail;
+        setTimeout(() => setAuthTab('login'), 900);
+      } catch (e) { showAlert('alertBox', 'danger', e.message); }
+    });
   }
-  async function doReset() {
+
+  async function doSelectRole(ev) {
     clearAlert('alertBox');
-    try {
-      await api('/auth/reset-password','POST',{ email:document.getElementById('fEmail').value, token:document.getElementById('fToken').value, newPassword:document.getElementById('fNew').value }, false);
-      showAlert('alertBox','success','Password reset! You can login now.');
-      setAuthTab('login');
-    } catch(e){ showAlert('alertBox','danger',e.message); }
+    await withBusy(ev && ev.target.closest('button'), 'Saving…', async () => {
+      try {
+        await api('/auth/select-role', 'POST', { email: _pendingEmail, role: val('sRole') }, false);
+        showAlert('alertBox', 'success', 'All set — please log in.');
+        const le = document.getElementById('lEmail'); if (le) le.value = _pendingEmail;
+        setTimeout(() => setAuthTab('login'), 900);
+      } catch (e) { showAlert('alertBox', 'danger', e.message); }
+    });
   }
+
+  async function doForgot(ev) {
+    clearAlert('alertBox');
+    const email = val('fEmail');
+    if (!isEmail(email)) { showAlert('alertBox', 'warning', 'Enter a valid email address'); return; }
+    await withBusy(ev && ev.target.closest('button'), 'Sending…', async () => {
+      try {
+        await api('/auth/forgot-password', 'POST', { email }, false);
+        showAlert('alertBox', 'success', 'If that email is registered, a reset code is on its way.');
+        document.getElementById('resetBox').classList.remove('d-none');
+      } catch (e) { showAlert('alertBox', 'danger', e.message); }
+    });
+  }
+
+  async function doReset(ev) {
+    clearAlert('alertBox');
+    const newPassword = document.getElementById('fNew').value;
+    if (!val('fToken')) { showAlert('alertBox', 'warning', 'Enter the reset code'); return; }
+    if (newPassword.length < 8) { showAlert('alertBox', 'warning', 'Password must be at least 8 characters'); return; }
+    await withBusy(ev && ev.target.closest('button'), 'Resetting…', async () => {
+      try {
+        await api('/auth/reset-password', 'POST',
+          { email: val('fEmail'), token: val('fToken'), newPassword }, false);
+        showAlert('alertBox', 'success', 'Password reset. You can log in now.');
+        const le = document.getElementById('lEmail'); if (le) le.value = val('fEmail');
+        setTimeout(() => setAuthTab('login'), 900);
+      } catch (e) { showAlert('alertBox', 'danger', e.message); }
+    });
+  }
+
+  // Enter submits the visible form.
+  document.getElementById('authModal').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const view = ['login','register','verify','forgot','role']
+      .map(t => document.getElementById(t + 'View'))
+      .find(v => v && !v.classList.contains('d-none'));
+    if (!view) return;
+    const btn = view.querySelector('button.btn-brand:not([disabled])');
+    if (btn) { e.preventDefault(); btn.click(); }
+  });
 </script>
 </body>
 </html>

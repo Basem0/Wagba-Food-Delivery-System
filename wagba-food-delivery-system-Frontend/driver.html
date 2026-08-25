@@ -8,10 +8,16 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link href="css/styles.css" rel="stylesheet">
+  <link href="css/styles.css?v=38" rel="stylesheet">
 </head>
 <body>
   <div id="nav"></div>
+  <header class="topbar">
+    <div>
+      <h1 id="pageTitle">Dashboard</h1>
+      <div class="sub" id="pageSub">Your delivery overview</div>
+    </div>
+  </header>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="side-brand"><span class="logo"><i class="bi bi-bicycle"></i></span> Wagba</div>
@@ -21,24 +27,31 @@
       <a class="side-link" data-view="mine" onclick="navTo('mine')"><i class="bi bi-bag-check"></i> My Deliveries</a>
       <a class="side-link" data-view="profile" onclick="navTo('profile')"><i class="bi bi-person-gear"></i> Profile</a>
       <a class="side-link" data-view="earnings" onclick="navTo('earnings')"><i class="bi bi-wallet2"></i> Earnings</a>
+      <a class="side-link" data-view="settings" onclick="navTo('settings')"><i class="bi bi-gear"></i> Settings</a>
       <div class="side-foot">Hit the road and earn.</div>
     </aside>
 
     <div class="main">
-      <header class="topbar">
-        <div><h1 id="pageTitle">Dashboard</h1><div class="sub" id="pageSub">Your delivery overview</div></div>
-      </header>
       <div class="content">
         <div id="alertBox"></div>
         <div id="profileBox"></div>
 
         <div id="view-dashboard" class="view">
+          <div class="dash-hero">
+            <div class="dh-ic"><i class="bi bi-bicycle"></i></div>
+            <div><div class="dh-title">Hit the road</div><div class="dh-sub">Pick up nearby deliveries, share live location and earn.</div></div>
+          </div>
           <div id="dashStats" class="row g-3 mb-3"></div>
-          <div class="card"><div class="card-body">
-            <div class="d-flex justify-between align-center mb-2">
-              <h5 class="mb-0"><i class="bi bi-broadcast"></i> Live location sharing</h5>
-              <button id="locBtn" class="btn-brand btn-sm" onclick="toggleLiveLocation()"><i class="bi bi-broadcast"></i> Share Live Location</button>
+          <div id="navCard" class="card d-none mb-3"><div class="card-body">
+            <div class="section-head"><span class="sh-ic"><i class="bi bi-map"></i></span><div><h5 class="mb-0">Your delivery route</h5><div class="sh-sub">Pickup from the restaurant, drop-off at the customer.</div></div><a id="navD_MapsLink" class="btn btn-sm btn-soft sh-action" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open in Maps</a></div>
+            <div id="navMap" class="nav-map mb-3"></div>
+            <div class="row g-2">
+              <div class="col-md-6"><div class="route-stop pickup"><div class="rs-ic"><i class="bi bi-shop"></i></div><div><div class="rs-label">Pickup</div><div id="navD_RestName" class="fw-semibold"></div><div id="navD_RestAddr" class="muted small"></div></div></div></div>
+              <div class="col-md-6"><div class="route-stop dropoff"><div class="rs-ic"><i class="bi bi-geo-alt"></i></div><div><div class="rs-label">Drop-off</div><div id="navD_CustName" class="fw-semibold"></div><div id="navD_CustAddr" class="muted small"></div></div></div></div>
             </div>
+          </div></div>
+          <div class="card"><div class="card-body">
+            <div class="section-head"><span class="sh-ic"><i class="bi bi-broadcast"></i></span><div><h5 class="mb-0">Live location sharing</h5></div><button id="locBtn" class="btn-brand btn-sm sh-action" onclick="toggleLiveLocation()"><i class="bi bi-broadcast"></i> Share Live Location</button></div>
             <p id="locStatus" class="muted small mb-2">Not sharing yet.</p>
             <div id="locMap" class="map-box d-none"></div>
           </div></div>
@@ -72,19 +85,60 @@
           <div id="driverWalletCard" class="card mb-3"><div class="card-body d-flex align-center gap-3">
             <div class="logo-mark" style="width:54px;height:54px;font-size:1.4rem;background:var(--gradient);color:#fff;border-radius:14px;display:grid;place-items:center"><i class="bi bi-wallet2"></i></div>
             <div><div class="muted small">Wallet balance</div><div class="h3 mb-0 gradient-text" id="driverWalletBalance">—</div></div>
+            <button class="btn btn-brand btn-sm ms-auto" onclick="openWithdraw()"><i class="bi bi-cash-coin"></i> Withdraw</button>
           </div></div>
           <div class="card"><div class="card-body">
             <h5 class="mb-3"><i class="bi bi-receipt"></i> Wallet transactions</h5>
             <div id="driverWalletTxns" class="scroll-x"><div class="muted small">Loading…</div></div>
           </div></div>
         </div>
+
+        <!-- SETTINGS -->
+        <div id="view-settings" class="view d-none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation modal -->
+  <div class="modal fade" id="navModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body p-3">
+          <div class="d-flex justify-between align-center mb-2">
+            <h5 class="modal-title"><i class="bi bi-map"></i> Delivery route</h5>
+            <button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div id="navMapModal" class="nav-map mb-3"></div>
+          <div class="row g-2">
+            <div class="col-md-6"><div class="route-stop pickup"><div class="rs-ic"><i class="bi bi-shop"></i></div><div><div class="rs-label">Pickup</div><div id="navM_RestName" class="fw-semibold"></div><div id="navM_RestAddr" class="muted small"></div></div></div></div>
+            <div class="col-md-6"><div class="route-stop dropoff"><div class="rs-ic"><i class="bi bi-geo-alt"></i></div><div><div class="rs-label">Drop-off</div><div id="navM_CustName" class="fw-semibold"></div><div id="navM_CustAddr" class="muted small"></div></div></div></div>
+          </div>
+          <div class="mt-3 text-center"><a id="navM_MapsLink" class="btn-brand w-100" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open turn-by-turn in Google Maps</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Withdraw modal -->
+  <div class="modal fade" id="withdrawModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i>Withdraw to Stripe</h5><button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button></div>
+        <div class="modal-body">
+          <div id="withdrawAlert"></div>
+          <div id="wdDev" class="alert alert-warning"><i class="bi bi-info-circle"></i> Demo mode: no Stripe key configured, so the payout is simulated and your wallet is debited.</div>
+          <label class="form-label">Amount (EGP)</label>
+          <input id="wdAmount" type="number" step="0.01" min="0" class="form-control" placeholder="0.00">
+          <div class="muted small mt-1">Available: <span id="wdAvail">—</span></div>
+        </div>
+        <div class="modal-footer"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-brand" onclick="withdrawEarnings()">Withdraw</button></div>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="js/common.js"></script>
+  <script src="js/common.js?v=38"></script>
   <script src="js/driver.js"></script>
 </body>
 </html>
