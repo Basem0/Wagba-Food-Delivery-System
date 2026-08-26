@@ -2,15 +2,12 @@
 //  Wagba frontend - common helpers (no build step, plain JS)
 // ============================================================
 
-// Must match server.port in the backend's application.properties.
-const DEFAULT_API = 'http://localhost:8081/api/v1';
+// Single, fixed backend origin. The server runs on 8082.
+const DEFAULT_API = 'http://localhost:8082/api/v1';
 
-function getApiBase() { return localStorage.getItem('wagba_api') || DEFAULT_API; }
-function setApiBase(v) {
-  const val = (v || '').trim();
-  if (val) localStorage.setItem('wagba_api', val);
-  else localStorage.removeItem('wagba_api');
-}
+// The API base is now fixed (unified) and can no longer be changed from the UI.
+function getApiBase() { return DEFAULT_API; }
+function setApiBase() { /* API base is fixed and unified across the app */ }
 
 // ---------- auth storage ----------
 function getToken() { return localStorage.getItem('wagba_token'); }
@@ -118,11 +115,11 @@ function boot(role, cb) {
     document.body.appendChild(bd);
   }
   const u = getUser();
-  if (u && u.role === role) { renderNav(u); cb(u); connectRealtime(); return; }
+  if (u && u.role === role) { renderNav(u); renderBottomNav(u); cb(u); connectRealtime(); return; }
   api('/auth/me').then(me => {
     setUser(me);
     if (me.role !== role) { location.href = dashFor(me.role); return; }
-    renderNav(me); cb(me); connectRealtime();
+    renderNav(me); renderBottomNav(me); cb(me); connectRealtime();
   }).catch(() => { location.href = 'index.html'; });
 }
 
@@ -141,7 +138,9 @@ function renderNav(me) {
   const isCust = me.role === 'CUSTOMER';
   nav.className = 'wagba-nav';
   nav.innerHTML = `
-    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu"><i class="bi bi-list"></i></button>
+    <a class="nav-brand" onclick="navTo(homeView('${me.role}'))" role="button" title="Home" aria-label="Home">
+      <span class="logo"><i class="bi bi-egg-fried"></i></span> <span class="brand-name">Wagba</span>
+    </a>
     <div class="spacer"></div>
     <button id="notifBtn" class="icon-btn position-relative" onclick="toggleNotifPanel(event)" title="Notifications">
       <i class="bi bi-bell"></i>
@@ -149,7 +148,7 @@ function renderNav(me) {
     </button>
     ${isCust ? `<button class="icon-btn nav-cart" id="navCartBtn" onclick="navTo('cart')" title="Cart"><i class="bi bi-cart3"></i><span class="side-badge d-none" id="navCartCount">0</span></button>` : ''}
     <div id="notifPanel" class="notif-panel d-none">
-      <div class="notif-head"><span>Notifications</span><button class="btn btn-link btn-sm p-0" onclick="markAllRead()">Mark all read</button></div>
+      <div class="notif-head"><span>Notifications</span><button id="notifClearBtn" class="btn-notif-clear" onclick="markAllRead()"><i class="bi bi-check2-all"></i> Mark all read</button></div>
       <div id="notifList" class="notif-list"></div>
     </div>
     <div class="chip" onclick="navTo('settings')" title="Settings" role="button" tabindex="0">
@@ -157,6 +156,7 @@ function renderNav(me) {
       <span class="chip-name fw-medium">${escapeHtml(me.name || me.email)}</span>
       <span class="badge role-pill">${escapeHtml(roleLabel(me.role))}</span>
     </div>`;
+  renderSideUser(me);
   if (!window.__notifOutsideBound) {
     document.addEventListener('click', (e) => {
       const panel = document.getElementById('notifPanel');
@@ -167,6 +167,89 @@ function renderNav(me) {
     window.__notifOutsideBound = true;
   }
   refreshNotifications();
+}
+
+function renderSideUser(me) {
+  const el = document.getElementById('sideUser');
+  if (!el || !me) return;
+  const roleColors = { CUSTOMER: 'var(--info)', RESTAURANT_OWNER: 'var(--brand)', DRIVER: 'var(--ok)', ADMIN: 'var(--violet)' };
+  el.innerHTML = `
+    <div class="su-avatar" style="background:${roleColors[me.role] || 'var(--gradient)'}">${escapeHtml(initials(me.name))}</div>
+    <div class="su-info">
+      <div class="su-name">${escapeHtml(me.name || 'User')}</div>
+      <div class="su-email">${escapeHtml(me.email || '')}</div>
+    </div>
+    <span class="su-role">${escapeHtml(roleLabel(me.role))}</span>`;
+  el.onclick = () => navTo('settings');
+}
+
+// ---------- mobile bottom navigation ----------
+// Flat, primary destinations per role. The "User" item maps to the settings
+// view (the account chip that lives in the top bar on desktop).
+const BOTTOM_NAV = {
+  CUSTOMER: [
+    { view: 'restaurants', label: 'Restaurants', icon: 'bi-shop' },
+    { view: 'cart', label: 'Cart', icon: 'bi-cart3', badge: 'cartCount' },
+    { view: 'orders', label: 'Orders', icon: 'bi-receipt' },
+    { view: 'coupons', label: 'Coupons', icon: 'bi-ticket-perforated' },
+    { view: 'settings', label: 'User', icon: 'bi-person-circle' },
+  ],
+  RESTAURANT_OWNER: [
+    { view: 'dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
+    { view: 'menu', label: 'Menu', icon: 'bi-menu-button' },
+    { view: 'orders', label: 'Orders', icon: 'bi-receipt' },
+    { view: 'earnings', label: 'Earnings', icon: 'bi-wallet2' },
+    { view: 'settings', label: 'User', icon: 'bi-person-circle' },
+  ],
+  DRIVER: [
+    { view: 'dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
+    { view: 'available', label: 'Availables', icon: 'bi-inboxes' },
+    { view: 'mine', label: 'Delivers', icon: 'bi-bag-check' },
+    { view: 'earnings', label: 'Earnings', icon: 'bi-wallet2' },
+    { view: 'settings', label: 'User', icon: 'bi-person-circle' },
+  ],
+  ADMIN: [
+    { view: 'overview', label: 'Overview', icon: 'bi-grid-1x2' },
+    { view: 'restaurants', label: 'Restaurants', icon: 'bi-shop' },
+    { view: 'drivers', label: 'Drivers', icon: 'bi-bicycle' },
+    { view: 'users', label: 'Users', icon: 'bi-people' },
+    { view: 'coupons', label: 'Coupons', icon: 'bi-ticket-perforated' },
+    { view: 'settings', label: 'User', icon: 'bi-person-circle' },
+  ],
+};
+function renderBottomNav(me) {
+  const host = document.getElementById('bottomNav');
+  if (!host) return;
+  const items = BOTTOM_NAV[me.role] || [];
+  host.innerHTML = items.map(it => `
+    <button class="bottom-link" data-view="${it.view}" onclick="navTo('${it.view}')" aria-label="${it.label}">
+      <i class="bi ${it.icon}"></i>
+      <span class="bl-label">${it.label}</span>
+      ${it.badge ? `<span id="${it.badge}Bottom" class="bl-badge d-none">0</span>` : ''}
+    </button>`).join('');
+  let active = 'restaurants';
+  const vis = document.querySelector('.view:not(.d-none)');
+  if (vis && vis.id && vis.id.indexOf('view-') === 0) active = vis.id.slice(5);
+  setBottomActive(active);
+  syncBottomBadge('cartCount');
+}
+function setBottomActive(view) {
+  document.querySelectorAll('.bottom-link').forEach(l => l.classList.toggle('active', l.dataset.view === view));
+}
+function syncBottomBadge(srcId) {
+  const src = document.getElementById(srcId);
+  const dst = document.getElementById(srcId + 'Bottom');
+  if (!src || !dst) return;
+  dst.textContent = src.textContent;
+  dst.classList.toggle('d-none', src.classList.contains('d-none'));
+}
+
+function homeView(role) {
+  if (role === 'CUSTOMER') return 'restaurants';
+  if (role === 'RESTAURANT_OWNER') return 'dashboard';
+  if (role === 'DRIVER') return 'dashboard';
+  if (role === 'ADMIN') return 'overview';
+  return 'restaurants';
 }
 
 function roleLabel(role) {
@@ -193,6 +276,8 @@ async function refreshNotifications() {
     const unread = typeof d.unreadCount === 'number' ? d.unreadCount : items.filter(n => !n.read).length;
     const badge = document.getElementById('notifBadge');
     if (badge) { badge.textContent = unread; badge.classList.toggle('d-none', unread === 0); }
+    const clearBtn = document.getElementById('notifClearBtn');
+    if (clearBtn) { clearBtn.disabled = unread === 0; clearBtn.classList.toggle('is-empty', unread === 0); }
     const listEl = document.getElementById('notifList');
     if (listEl) {
       listEl.innerHTML = items.length ? items.map(n => {
@@ -240,6 +325,7 @@ function navTo(view) {
   const el = document.getElementById('view-' + view);
   if (el) { el.classList.remove('d-none'); el.classList.add('view-enter'); }
   document.querySelectorAll('.side-link').forEach(l => l.classList.toggle('active', l.dataset.view === view));
+  setBottomActive(view);
   const t = window.VIEWS && window.VIEWS[view];
   if (t) {
     const pt = document.getElementById('pageTitle'); if (pt) pt.textContent = t.title || '';
@@ -263,9 +349,10 @@ function toast(title, msg, type = '') {
   if (!wrap) { wrap = document.createElement('div'); wrap.className = 'toast-wrap'; document.body.appendChild(wrap); }
   const el = document.createElement('div');
   el.className = 'toast-wagba ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
-  el.innerHTML = `<div class="t-title">${escapeHtml(title)}</div><div class="t-msg">${escapeHtml(msg || '')}</div>`;
+  const icon = type === 'ok' ? 'bi-check-lg' : type === 'err' ? 'bi-x-lg' : 'bi-bell';
+  el.innerHTML = `<div class="t-icon"><i class="bi ${icon}"></i></div><div class="t-body"><div class="t-title">${escapeHtml(title)}</div><div class="t-msg">${escapeHtml(msg || '')}</div></div>`;
   wrap.appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; setTimeout(() => el.remove(), 300); }, 3200);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(24px) scale(.96)'; setTimeout(() => el.remove(), 300); }, 3200);
 }
 
 // ---------- UI utils ----------
@@ -351,61 +438,55 @@ function formatAddr(a) {
   return a.details ? line + (line ? ' - ' : '') + a.details : line;
 }
 
-// ---------- Settings (shared across roles) ----------
-function renderSettingsShell(extraHtml) {
+// ---------- Settings (shared across roles, categorized) ----------
+// opts: { panel, label, icon }  — panel is the role-specific HTML (profile/address/store).
+function renderSettingsShell(opts) {
+  opts = opts || {};
+  const panel = opts.panel || '';
+  const label = opts.label || 'Profile';
+  const icon = opts.icon || 'person-gear';
+  const roleNav = panel ? `<button class="set-cat" data-cat="role" onclick="selectSettingsCat('role')"><i class="bi bi-${icon}"></i> ${escapeHtml(label)}</button>` : '';
   return `
   <div class="dash-hero"><i class="bi bi-gear"></i><div><h4 class="mb-0">Settings</h4><div class="hero-sub">Manage your account and preferences</div></div></div>
-  <div class="row g-3">
-    <div class="col-lg-6">
-      <div class="card"><div class="card-body">
-        <div class="section-head mb-3"><span class="sh-ic"><i class="bi bi-person"></i></span><div><h5 class="mb-0">Account</h5></div></div>
-        <div id="acctAlert"></div>
-        <div class="mb-2"><label class="form-label">Full name</label><input id="acctName" class="form-control" autocomplete="name"></div>
-        <div class="mb-2"><label class="form-label">Email</label><input id="acctEmail" class="form-control" disabled></div>
-        <div class="mb-2"><label class="form-label">Phone</label><input id="acctPhone" class="form-control" autocomplete="tel" placeholder="01xxxxxxxxx"></div>
-        <button class="btn-brand" onclick="saveAccountSettings()">Save changes</button>
-      </div></div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card"><div class="card-body">
-        <div class="section-head mb-3"><span class="sh-ic"><i class="bi bi-shield-lock"></i></span><div><h5 class="mb-0">Security</h5></div></div>
-        <div id="pwAlert"></div>
-        <div class="mb-2"><label class="form-label">Current password</label><input id="pwCurrent" type="password" class="form-control" autocomplete="current-password"></div>
-        <div class="mb-2"><label class="form-label">New password</label><input id="pwNew" type="password" class="form-control" autocomplete="new-password"><div class="form-hint">At least 8 characters.</div></div>
-        <div class="mb-2"><label class="form-label">Confirm new password</label><input id="pwConfirm" type="password" class="form-control" autocomplete="new-password"></div>
-        <button class="btn-brand" onclick="saveChangePassword()">Update password</button>
-      </div></div>
-    </div>
-    ${extraHtml || ''}
-    <div class="col-lg-6">
-      <div class="card"><div class="card-body">
-        <div class="section-head mb-3"><span class="sh-ic"><i class="bi bi-hdd-network"></i></span><div><h5 class="mb-0">Advanced</h5><div class="muted small">Only change this if you know what it is</div></div></div>
-        <label class="form-label">API base URL</label>
-        <div class="d-flex gap-2">
-          <input id="apiInput" class="form-control" value="${escapeHtml(getApiBase())}" spellcheck="false">
-          <button class="btn btn-soft" onclick="saveApiBase()">Save</button>
-        </div>
-        <div class="form-hint">Default: ${escapeHtml(DEFAULT_API)}</div>
-      </div></div>
-    </div>
-  </div>
-  <div class="row g-3 mt-1">
-    <div class="col-12">
-      <div class="card"><div class="card-body d-flex justify-between align-center flex-wrap gap-2">
-        <div><div class="fw-semibold">Sign out</div><div class="muted small">You'll be returned to the login screen</div></div>
-        <button class="btn btn-soft btn-danger-soft" onclick="doLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
-      </div></div>
+  <div class="settings-wrap">
+    <aside class="settings-nav card">
+      <button class="set-cat active" data-cat="account" onclick="selectSettingsCat('account')"><i class="bi bi-person"></i> Account</button>
+      <button class="set-cat" data-cat="security" onclick="selectSettingsCat('security')"><i class="bi bi-shield-lock"></i> Security</button>
+      ${roleNav}
+    </aside>
+    <div class="settings-body">
+      <section class="set-panel active" data-cat="account">
+        <div class="card"><div class="card-body">
+          <div class="section-head mb-3"><span class="sh-ic"><i class="bi bi-person"></i></span><div><h5 class="mb-0">Account</h5></div></div>
+          <div id="acctAlert"></div>
+          <div class="mb-2"><label class="form-label">Full name</label><input id="acctName" class="form-control" autocomplete="name"></div>
+          <div class="mb-2"><label class="form-label">Email</label><input id="acctEmail" class="form-control" disabled></div>
+          <div class="mb-2"><label class="form-label">Phone</label><input id="acctPhone" class="form-control" autocomplete="tel" placeholder="01xxxxxxxxx"></div>
+          <button class="btn-brand" onclick="saveAccountSettings()">Save changes</button>
+        </div></div>
+        <div class="card mt-3"><div class="card-body d-flex justify-between align-center flex-wrap gap-2">
+          <div><div class="fw-semibold">Sign out</div><div class="muted small">You'll be returned to the login screen</div></div>
+          <button class="btn btn-soft btn-danger-soft" onclick="doLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+        </div></div>
+      </section>
+      <section class="set-panel" data-cat="security">
+        <div class="card"><div class="card-body">
+          <div class="section-head mb-3"><span class="sh-ic"><i class="bi bi-shield-lock"></i></span><div><h5 class="mb-0">Security</h5></div></div>
+          <div id="pwAlert"></div>
+          <div class="mb-2"><label class="form-label">Current password</label><input id="pwCurrent" type="password" class="form-control" autocomplete="current-password"></div>
+          <div class="mb-2"><label class="form-label">New password</label><input id="pwNew" type="password" class="form-control" autocomplete="new-password"><div class="form-hint">At least 8 characters.</div></div>
+          <div class="mb-2"><label class="form-label">Confirm new password</label><input id="pwConfirm" type="password" class="form-control" autocomplete="new-password"></div>
+          <button class="btn-brand" onclick="saveChangePassword()">Update password</button>
+        </div></div>
+      </section>
+      ${panel ? `<section class="set-panel" data-cat="role">${panel}</section>` : ''}
     </div>
   </div>`;
 }
-function saveApiBase() {
-  const el = document.getElementById('apiInput');
-  if (!el) return;
-  let v = el.value.trim().replace(/\/+$/, '');
-  if (v && !/^https?:\/\//i.test(v)) { toast('Invalid URL', 'Start with http:// or https://', 'err'); return; }
-  setApiBase(v);
-  el.value = getApiBase();
-  toast('Saved', 'API base set to ' + getApiBase());
+function selectSettingsCat(cat) {
+  document.querySelectorAll('.settings-nav .set-cat').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  document.querySelectorAll('.settings-body .set-panel').forEach(p => p.classList.toggle('active', p.dataset.cat === cat));
+  if (window.__onSettingsCat) { try { window.__onSettingsCat(cat); } catch (e) {} }
 }
 async function loadAccountSettings() {
   try {

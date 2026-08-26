@@ -78,10 +78,10 @@ function renderSettings() {
   const root = document.getElementById('view-settings');
   if (!root) return;
   if (addrMap) { addrMap.remove(); addrMap = null; addrMarker = null; }
-  root.innerHTML = renderSettingsShell(addressCardHtml());
+  root.innerHTML = renderSettingsShell({ panel: addressCardHtml(), label: 'Address', icon: 'geo-alt' });
   loadAccountSettings();
   loadAddress();
-  initAddressMap();
+  window.__onSettingsCat = (c) => { if (c === 'role') { if (!addrMap) initAddressMap(); else setTimeout(() => addrMap.invalidateSize(), 60); } };
 }
 
 let addrMap = null, addrMarker = null, addrLat = null, addrLng = null;
@@ -397,6 +397,7 @@ async function loadCart() {
       if (pill) pill.classList.add('d-none');
       if (cnt) cnt.classList.add('d-none');
       const ncc = document.getElementById('navCartCount'); if (ncc) ncc.classList.add('d-none');
+      syncBottomBadge('cartCount');
       const ci = document.getElementById('checkoutCard'); if (ci) ci.classList.add('d-none');
       return;
     }
@@ -404,6 +405,7 @@ async function loadCart() {
     if (cnt) { cnt.classList.remove('d-none'); cnt.textContent = c.items.length; }
     const ncc = document.getElementById('navCartCount');
     if (ncc) { ncc.classList.remove('d-none'); ncc.textContent = c.items.length; }
+    syncBottomBadge('cartCount');
     const ci = document.getElementById('checkoutCard'); if (ci) ci.classList.remove('d-none');
     window.cartTotal = c.total;
     const ct = document.getElementById('cartCheckoutTotal'); if (ct) ct.textContent = money(c.total);
@@ -563,6 +565,7 @@ async function submitCheckout() {
       toast('Order placed', 'Order #' + order.id + ' · ' + order.status);
       loadCart();
       navTo('orders'); loadOrders();
+      startCancelTimer(order.id);
     } else {
       await startVisaPayment(body);
     }
@@ -573,11 +576,13 @@ async function loadOrders() {
   try {
     showSkeletons('orderList', 4, 132);
     const page = await api('/orders?page=0&size=100');
-    const list = page.content || [];
+    const list = (page.content || []).filter(o => o.status !== 'CANCELLED');
+    window._orderMap = Object.fromEntries(list.map(o => [o.id, o]));
     const el = document.getElementById('orderList');
     if (!list.length) { el.innerHTML = emptyState('bi-receipt', 'No orders yet', 'Your orders will appear here.'); return; }
     el.innerHTML = list.map(o => `
-      <div class="card order-card mb-3 fade-in"><div class="card-body">
+      <div class="card order-card mb-3 fade-in" style="cursor:pointer" onclick="openOrderDetail(${o.id})">
+        <div class="card-body">
         <div class="oc-top">
           <div class="oc-ic"><i class="bi bi-receipt"></i></div>
           <div style="flex:1;min-width:0">
@@ -593,19 +598,48 @@ async function loadOrders() {
         <div class="oc-foot">
           <div class="oc-total">${money(o.totalPrice)}${o.discountAmount ? `<span class="save">saved ${money(o.discountAmount)}${o.couponCode ? ' · ' + escapeHtml(o.couponCode) : ''}</span>` : ''}</div>
           <div class="d-flex gap-2">
-            ${o.status === 'PENDING' ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelOrder(${o.id})">Cancel</button>` : ''}
-            ${o.status === 'DELIVERED' && !o.reviewed ? `<button class="btn btn-sm btn-soft" onclick="openReview(${o.id})"><i class="bi bi-star"></i> Review</button>` : ''}
             ${o.status === 'DELIVERED' && o.reviewed ? `<span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle"></i> Reviewed</span>` : ''}
-            ${(o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED') ? `<button class="btn btn-sm btn-brand" onclick="trackOrder(${o.id})"><i class="bi bi-geo-alt"></i> Track</button>` : ''}
+            ${(o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED') ? `<button class="btn btn-sm btn-brand" onclick="event.stopPropagation(); trackOrder(${o.id})"><i class="bi bi-geo-alt"></i> Track</button>` : ''}
           </div>
         </div>
-      </div></div>`).join('');
+        </div>
+      </div>`).join('');
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
+let _cancelTimer = null;
 async function cancelOrder(id) {
-  try { await api('/orders/' + id + '/cancel', 'POST'); toast('Cancelled', 'Order #' + id); loadOrders(); }
-  catch (e) { showAlert('alertBox', 'danger', e.message); }
+  try {
+    await api('/orders/' + id + '/cancel', 'POST');
+    toast('Order cancelled', 'Order #' + id);
+    loadOrders();
+  } catch (e) { toast('Error', e.message, 'danger'); }
+}
+// 10-second undo window shown right after an order is placed.
+function startCancelTimer(orderId) {
+  const banner = document.getElementById('cancelBanner');
+  const text = document.getElementById('cancelBannerText');
+  const btn = document.getElementById('cancelBannerBtn');
+  if (!banner) return;
+  let remaining = 10;
+  clearInterval(_cancelTimer);
+  btn.onclick = () => {
+    clearInterval(_cancelTimer);
+    banner.style.display = 'none';
+    cancelOrder(orderId);
+  };
+  const render = () => { text.textContent = 'Order #' + orderId + ' placed — you can cancel within ' + remaining + 's'; };
+  render();
+  banner.style.display = 'flex';
+  _cancelTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(_cancelTimer);
+      banner.style.display = 'none';
+    } else {
+      render();
+    }
+  }, 1000);
 }
 // ---------- Payment (Stripe, with dev fallback) ----------
 // For Visa the order is NOT created until the card payment succeeds.
@@ -644,7 +678,7 @@ async function confirmPayment() {
   try {
     const { error, paymentIntent } = await _stripe.confirmCardPayment(_clientSecret, { payment_method: { card: _card } });
     if (error) { showAlert('payAlert', 'danger', error.message); return; }
-    if (paymentIntent && paymentIntent.status === 'succeeded') {
+    if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture')) {
       await finishVisaOrder(paymentIntent.id);
       const m = bootstrap.Modal.getInstance(document.getElementById('payModal'));
       if (m) m.hide();
@@ -666,38 +700,162 @@ async function finishVisaOrder(paymentReference) {
     window._visaBody = null;
     loadCart();
     navTo('orders'); loadOrders();
+    startCancelTimer(order.id);
   } catch (e) { showAlert('checkoutAlert', 'danger', e.message); }
 }
 
 
-function openReview(orderId) {
-  document.getElementById('rvOrderId').value = orderId;
-  clearAlert('reviewAlert');
-  new bootstrap.Modal(document.getElementById('reviewModal')).show();
+// ---------- Order detail + reviews (items / order / driver) ----------
+function starInput(id, current) {
+  let s = `<div class="stars" id="stars-${id}">`;
+  for (let i = 1; i <= 5; i++) {
+    s += `<span class="star ${current >= i ? 'on' : ''}" data-v="${i}" onclick="setStar('${id}',${i})">★</span>`;
+  }
+  s += `</div><input type="hidden" id="${id}" value="${current || 0}">`;
+  return s;
 }
-async function submitReview() {
-  clearAlert('reviewAlert');
-  const body = { orderId: parseInt(document.getElementById('rvOrderId').value), rating: parseInt(document.getElementById('rvRating').value), comment: document.getElementById('rvComment').value };
-    try { await api('/reviews', 'POST', body); bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide(); toast('Thanks!', 'Review submitted'); loadOrders(); }
-  catch (e) { showAlert('reviewAlert', 'danger', e.message); }
+function setStar(id, v) {
+  document.getElementById(id).value = v;
+  document.querySelectorAll('#stars-' + id + ' .star').forEach(st =>
+    st.classList.toggle('on', parseInt(st.dataset.v) <= v));
 }
+function reviewBlock(type, targetId, label, existing, orderId) {
+  const rid = 'r_' + type + '_' + targetId;
+  const cid = 'c_' + type + '_' + targetId;
+  const shown = existing
+    ? `<div class="rv-done"><i class="bi bi-check-circle text-success"></i> You rated ${existing.rating}★${existing.comment ? ' — ' + escapeHtml(existing.comment) : ''}</div>`
+    : `<div class="rv-form">
+         ${starInput(rid, 0)}
+         <textarea id="${cid}" class="form-control form-control-sm mt-2" rows="2" placeholder="Your comment (optional)"></textarea>
+         <button class="btn btn-sm btn-brand mt-2" onclick="submitDetailReview(${orderId},'${type}',${targetId},'${rid}','${cid}')">Submit review</button>
+       </div>`;
+  return `<div class="rv-block"><div class="rv-label">${label}</div>${shown}</div>`;
+}
+async function openOrderDetail(id) {
+  const o = window._orderMap && window._orderMap[id];
+  if (!o) return;
+  window._od = o;
+  let reviews = [];
+  try { reviews = await api('/reviews/order/' + id); } catch (e) { reviews = []; }
+  renderOrderDetail(o, reviews);
+  new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
+}
+function renderOrderDetail(o, reviews) {
+  const orderRv = reviews.find(r => r.type === 'ORDER');
+  const driverRv = o.driverId ? reviews.find(r => r.type === 'DRIVER') : null;
+  const canReview = o.status === 'DELIVERED';
+  let itemsHtml = o.items.map(it => {
+    const itemRv = reviews.find(r => r.type === 'ITEM' && r.targetId === it.foodId);
+    const img = it.imageUrl
+      ? `<img class="od-item-img" src="${escapeHtml(it.imageUrl)}" alt="${escapeHtml(it.foodName)}" onerror="this.style.display='none'">`
+      : '';
+    return `<div class="od-item">
+        ${img}
+        <div class="od-item-main"><div class="od-item-name">${escapeHtml(it.foodName)}</div>
+          <div class="od-item-sub">${it.quantity} × ${money(it.unitPrice)}</div></div>
+        <div class="od-item-price">${money(it.subtotal)}</div>
+      </div>
+      ${canReview ? reviewBlock('ITEM', it.foodId, 'Rate this item', itemRv, o.id) : ''}`;
+  }).join('');
+  const reviewsHtml = canReview
+    ? `<div class="od-section"><h6>Reviews</h6>
+         ${reviewBlock('ORDER', 0, 'Rate the order', orderRv, o.id)}
+         ${o.driverId ? reviewBlock('DRIVER', o.driverId, 'Rate the driver' + (o.driverName ? ' (' + escapeHtml(o.driverName) + ')' : ''), driverRv, o.id) : ''}
+       </div>`
+    : `<div class="od-section text-muted small">Reviews are available after the order is delivered.</div>`;
+  document.getElementById('orderDetailBody').innerHTML = `
+    <div class="od-head">
+      <div><div class="oc-title">Order #${o.id}</div>
+        <div class="oc-sub">${escapeHtml(o.restaurantName || 'Restaurant')} · ${fmtDateTime(o.createdAt)}</div></div>
+      <div class="oc-badges">${statusBadge(o.status)} ${o.deliveryStatus ? statusBadge(o.deliveryStatus) : ''}</div>
+    </div>
+    <div class="od-section"><h6>Items</h6>${itemsHtml}</div>
+    <div class="od-section od-totals">
+      <div class="row"><span>Subtotal</span><span>${money(o.subtotal)}</span></div>
+      <div class="row"><span>Delivery fee</span><span>${money(o.deliveryFee)}</span></div>
+      ${o.discountAmount ? `<div class="row save"><span>Discount${o.couponCode ? ' (' + escapeHtml(o.couponCode) + ')' : ''}</span><span>-${money(o.discountAmount)}</span></div>` : ''}
+      <div class="row total"><span>Total</span><span>${money(o.totalPrice)}</span></div>
+      <div class="row"><span>Payment</span><span>${escapeHtml(o.paymentMethod || '')}${o.paid ? ' · paid' : ''}</span></div>
+    </div>
+    ${o.deliveryAddress ? `<div class="od-section"><h6>Delivery address</h6><div class="text-muted">${escapeHtml(formatAddr(o.deliveryAddress))}</div></div>` : ''}
+    ${reviewsHtml}`;
+}
+async function submitDetailReview(orderId, type, targetId, ratingId, commentId) {
+  const rating = parseInt(document.getElementById(ratingId).value) || 0;
+  const comment = document.getElementById(commentId).value;
+  if (rating < 1) { toast('Rate first', 'Please choose a star rating', 'danger'); return; }
+  try {
+    await api('/reviews', 'POST', { orderId, rating, comment, type, targetId });
+    toast('Thanks!', 'Review submitted');
+    const reviews = await api('/reviews/order/' + orderId);
+    const o = window._od;
+    renderOrderDetail(o, reviews);
+    loadOrders();
+  } catch (e) { toast('Error', e.message, 'danger'); }
+}
+
+let _couponFilter = 'all';
+let _couponList = [];
 
 async function loadCoupons() {
   try {
-    const list = await api('/coupons/mine');
-    const el = document.getElementById('couponList');
-    if (!list.length) { el.innerHTML = emptyState('bi-ticket-perforated', 'No coupons', 'Admin coupons assigned to you will show here.'); return; }
-    el.innerHTML = list.map(c => `
-      <div class="coupon-card mb-2">
-        <div class="cc-ic"><i class="bi bi-ticket-perforated"></i></div>
-        <div style="flex:1;min-width:0">
-          <div class="cc-code">${escapeHtml(c.code)}</div>
-          <div class="cc-meta">${escapeHtml(c.description || '')}</div>
-          <div class="cc-meta mt-1">${c.discountType === 'PERCENTAGE' ? c.value + '% off' : money(c.value) + ' off'}${c.minOrderTotal ? ' · min ' + money(c.minOrderTotal) : ''} · expires ${escapeHtml(c.expiryDate || 'never')}</div>
-        </div>
-        <span class="badge ${c.used ? 'bg-secondary' : 'bg-success'}">${c.used ? 'Used' : 'Available'}</span>
-      </div>`).join('');
+    _couponList = await api('/coupons/mine');
+    renderCouponTabs();
+    renderCouponList();
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+
+function renderCouponTabs() {
+  const el = document.getElementById('couponList');
+  const now = new Date();
+  const all = _couponList.length;
+  const valid = _couponList.filter(c => !c.used && (!c.expiryDate || new Date(c.expiryDate) >= now)).length;
+  const used = _couponList.filter(c => c.used).length;
+  const expired = _couponList.filter(c => !c.used && c.expiryDate && new Date(c.expiryDate) < now).length;
+  el.innerHTML = `
+    <div class="coupon-tabs">
+      <button class="coupon-tab ${_couponFilter === 'all' ? 'active' : ''}" onclick="filterCoupons('all')">All <span class="ct-count">${all}</span></button>
+      <button class="coupon-tab ${_couponFilter === 'valid' ? 'active' : ''}" onclick="filterCoupons('valid')">Valid <span class="ct-count">${valid}</span></button>
+      <button class="coupon-tab ${_couponFilter === 'used' ? 'active' : ''}" onclick="filterCoupons('used')">Used <span class="ct-count">${used}</span></button>
+      <button class="coupon-tab ${_couponFilter === 'expired' ? 'active' : ''}" onclick="filterCoupons('expired')">Expired <span class="ct-count">${expired}</span></button>
+    </div>
+    <div id="couponCards"></div>`;
+}
+
+function filterCoupons(f) {
+  _couponFilter = f;
+  renderCouponTabs();
+  renderCouponList();
+}
+
+function renderCouponList() {
+  const box = document.getElementById('couponCards');
+  if (!box) return;
+  const now = new Date();
+  let list = _couponList;
+  if (_couponFilter === 'valid') list = list.filter(c => !c.used && (!c.expiryDate || new Date(c.expiryDate) >= now));
+  else if (_couponFilter === 'used') list = list.filter(c => c.used);
+  else if (_couponFilter === 'expired') list = list.filter(c => !c.used && c.expiryDate && new Date(c.expiryDate) < now);
+
+  if (!list.length) {
+    box.innerHTML = `<div class="coupon-empty"><i class="bi bi-ticket-perforated"></i><div>No ${_couponFilter === 'all' ? '' : _couponFilter + ' '}coupons</div></div>`;
+    return;
+  }
+  box.innerHTML = list.map(c => {
+    const isExpired = c.expiryDate && new Date(c.expiryDate) < now;
+    const statusCls = c.used ? 'used' : isExpired ? 'expired' : 'valid';
+    const statusLabel = c.used ? 'Used' : isExpired ? 'Expired' : 'Available';
+    return `
+    <div class="coupon-card mb-2 ${statusCls}">
+      <div class="cc-ic"><i class="bi bi-ticket-perforated"></i></div>
+      <div style="flex:1;min-width:0">
+        <div class="cc-code">${escapeHtml(c.code)}</div>
+        <div class="cc-meta">${escapeHtml(c.description || '')}</div>
+        <div class="cc-meta mt-1">${c.discountType === 'PERCENTAGE' ? c.value + '% off' : money(c.value) + ' off'}${c.minOrderTotal ? ' · min ' + money(c.minOrderTotal) : ''} · expires ${escapeHtml(c.expiryDate || 'never')}</div>
+      </div>
+      <span class="coupon-status ${statusCls}">${statusLabel}</span>
+    </div>`;
+  }).join('');
 }
 
 async function loadReviews() {

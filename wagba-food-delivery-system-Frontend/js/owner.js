@@ -6,45 +6,73 @@ function init() {
     dashboard: { title: 'Dashboard', sub: 'Overview of your restaurant' },
     menu: { title: 'Menu', sub: 'Manage categories & dishes' },
     orders: { title: 'Orders', sub: 'Accept and fulfil orders' },
-    profile: { title: 'Profile', sub: 'Your storefront & location' },
     earnings: { title: 'Earnings', sub: 'Wallet & payouts' },
     settings: { title: 'Settings', sub: 'Manage your account' }
   };
-  window.onNav = (v) => { if (v === 'menu') { loadCategories(); loadFoods(); } if (v === 'orders') loadOrders(); if (v === 'profile') loadProfileView(); if (v === 'earnings') loadEarnings(); if (v === 'settings') renderSettings(); };
+  window.onNav = (v) => { if (v === 'menu') { loadCategories(); loadFoods(); } if (v === 'orders') loadOrders(); if (v === 'earnings') loadEarnings(); if (v === 'settings') renderSettings(); };
   window.__realtimeRefresh = () => { loadOrders(); loadRestaurant(); };
   navTo('dashboard');
   loadRestaurant();
 }
 
-const OWNER_SETTINGS_EXTRA = `
-<div class="col-12">
-  <div class="card detail-card"><div class="card-body">
-    <h5 class="card-title">Restaurant details</h5>
-    <div id="ownAlert"></div>
-    <div class="row g-2">
-      <div class="col-sm-6 mb-2"><label class="form-label">Name</label><input id="ownName" class="form-control"></div>
-      <div class="col-sm-6 mb-2"><label class="form-label">Cuisine</label><input id="ownCuisine" class="form-control"></div>
-      <div class="col-12 mb-2"><label class="form-label">Description</label><textarea id="ownDesc" class="form-control" rows="2"></textarea></div>
-      <div class="col-sm-6 mb-2"><label class="form-label">Phone</label><input id="ownPhone" class="form-control"></div>
-      <div class="col-sm-6 mb-2"><label class="form-label">ETA (minutes)</label><input id="ownEta" type="number" class="form-control"></div>
-      <div class="col-sm-6 mb-2"><label class="form-label">Delivery fee (EGP)</label><input id="ownFee" type="number" step="0.01" class="form-control"></div>
-      <div class="col-sm-6 mb-2"><label class="form-label">Min order (EGP)</label><input id="ownMin" type="number" step="0.01" class="form-control"></div>
+const OWNER_PROFILE_PANEL = `
+<div class="card detail-card mb-3"><div class="card-body">
+  <div class="section-head mb-3"><span class="sh-ic"><i class="bi bi-shop-window"></i></span><div><h5 class="mb-0">Restaurant info</h5><div class="text-muted small">What customers see on your storefront</div></div></div>
+  <div id="ownAlert"></div>
+  <div class="row g-2">
+    <div class="col-sm-6 mb-2"><label class="form-label">Name</label><input id="ownName" class="form-control"></div>
+    <div class="col-sm-6 mb-2"><label class="form-label">Cuisine</label><input id="ownCuisine" class="form-control"></div>
+    <div class="col-12 mb-2"><label class="form-label">Description</label><textarea id="ownDesc" class="form-control" rows="2"></textarea></div>
+    <div class="col-sm-6 mb-2"><label class="form-label">Phone</label><input id="ownPhone" class="form-control"></div>
+    <div class="col-sm-6 mb-2"><label class="form-label">ETA (minutes)</label><input id="ownEta" type="number" class="form-control"></div>
+    <div class="col-sm-6 mb-2"><label class="form-label">Delivery fee (EGP)</label><input id="ownFee" type="number" step="0.01" class="form-control"></div>
+    <div class="col-sm-6 mb-2"><label class="form-label">Min order (EGP)</label><input id="ownMin" type="number" step="0.01" class="form-control"></div>
+    <div class="col-12 mb-2"><label class="form-label">Image URL</label>
+      <input id="pfImg" class="form-control">
+      <div class="mt-2 d-flex gap-2 align-center">
+        <input type="file" id="pfImgFile" accept="image/*" class="form-control form-control-sm">
+        <button class="btn btn-sm btn-soft" type="button" onclick="uploadImage('pfImg','pfImgFile')"><i class="bi bi-upload"></i> Upload</button>
+      </div>
     </div>
-    <button class="btn-brand" onclick="saveOwnerSettings()">Save restaurant details</button>
-  </div></div>
-</div>`;
+  </div>
+  <button class="btn-brand" onclick="saveOwnerSettings()"><i class="bi bi-check-lg"></i> Save restaurant info</button>
+</div></div>
+
+<div class="card detail-card"><div class="card-body">
+  <div class="d-flex justify-between align-center mb-2">
+    <div class="section-head mb-0"><span class="sh-ic"><i class="bi bi-geo-alt"></i></span><div><h5 class="mb-0">Restaurant location</h5></div></div>
+    <button type="button" class="btn btn-sm btn-soft" onclick="useRestaurantLocation()"><i class="bi bi-geo-alt"></i> Use my location</button>
+  </div>
+  <div class="d-flex gap-2 mb-2">
+    <input id="pfSearch" class="form-control" placeholder="Search your address (e.g. Tahrir, Cairo)">
+    <button class="btn btn-soft btn-sm" type="button" onclick="searchRestaurantAddress()"><i class="bi bi-search"></i></button>
+  </div>
+  <div id="profileMap" class="map-picker"></div>
+  <div class="muted small mt-1">Search your address or tap the map to drop your restaurant's pin.</div>
+  <div class="row g-2 mt-3">
+    <div class="col-6"><label class="form-label">City</label><input id="pfCity" class="form-control"></div>
+    <div class="col-6"><label class="form-label">Street</label><input id="pfStreet" class="form-control"></div>
+    <div class="col-4"><label class="form-label">Building</label><input id="pfBuilding" class="form-control"></div>
+    <div class="col-4"><label class="form-label">Apartment</label><input id="pfApartment" class="form-control"></div>
+    <div class="col-4"><label class="form-label">Landmark</label><input id="pfDetails" class="form-control"></div>
+  </div>
+  <button class="btn-brand mt-3" onclick="saveOwnerSettings()"><i class="bi bi-check-lg"></i> Save location</button>
+</div></div>`;
 
 function renderSettings() {
   const root = document.getElementById('view-settings');
   if (!root) return;
-  root.innerHTML = renderSettingsShell(OWNER_SETTINGS_EXTRA);
+  if (profileMap) { profileMap.remove(); profileMap = null; profileMarker = null; }
+  root.innerHTML = renderSettingsShell({ panel: OWNER_PROFILE_PANEL, label: 'Restaurant', icon: 'shop-window' });
   loadAccountSettings();
   loadOwnerSettings();
+  window.__onSettingsCat = (c) => { if (c === 'role') { initProfileMap(); setTimeout(() => profileMap && profileMap.invalidateSize(), 60); } };
 }
 async function loadOwnerSettings() {
   try {
     const r = await api('/restaurant-owner/restaurant');
     const s = (v) => v == null ? '' : String(v);
+    window._rest = r;
     if (document.getElementById('ownName')) document.getElementById('ownName').value = s(r.name);
     if (document.getElementById('ownCuisine')) document.getElementById('ownCuisine').value = s(r.cuisine);
     if (document.getElementById('ownDesc')) document.getElementById('ownDesc').value = s(r.description);
@@ -52,6 +80,12 @@ async function loadOwnerSettings() {
     if (document.getElementById('ownEta')) document.getElementById('ownEta').value = s(r.etaMinutes);
     if (document.getElementById('ownFee')) document.getElementById('ownFee').value = s(r.deliveryFee);
     if (document.getElementById('ownMin')) document.getElementById('ownMin').value = s(r.minOrderTotal);
+    if (document.getElementById('pfImg')) document.getElementById('pfImg').value = s(r.imageUrl);
+    if (document.getElementById('pfCity')) document.getElementById('pfCity').value = s(r.city);
+    if (document.getElementById('pfStreet')) document.getElementById('pfStreet').value = s(r.street);
+    if (document.getElementById('pfBuilding')) document.getElementById('pfBuilding').value = s(r.buildingNumber);
+    if (document.getElementById('pfApartment')) document.getElementById('pfApartment').value = s(r.apartment);
+    if (document.getElementById('pfDetails')) document.getElementById('pfDetails').value = s(r.details);
   } catch (e) { showAlert('ownAlert', 'danger', e.message); }
 }
 async function saveOwnerSettings() {
@@ -64,11 +98,19 @@ async function saveOwnerSettings() {
     phone: g('ownPhone'),
     etaMinutes: g('ownEta') ? parseInt(g('ownEta')) : null,
     deliveryFee: g('ownFee') ? parseFloat(g('ownFee')) : null,
-    minOrderTotal: g('ownMin') ? parseFloat(g('ownMin')) : null
+    minOrderTotal: g('ownMin') ? parseFloat(g('ownMin')) : null,
+    imageUrl: g('pfImg'),
+    city: g('pfCity') || null,
+    street: g('pfStreet') || null,
+    buildingNumber: g('pfBuilding') || null,
+    apartment: g('pfApartment') || null,
+    details: g('pfDetails') || null,
+    latitude: profileMarker ? profileMarker.getLatLng().lat : (window._rest && window._rest.latitude),
+    longitude: profileMarker ? profileMarker.getLatLng().lng : (window._rest && window._rest.longitude)
   };
   try {
     await api('/restaurant-owner/restaurant', 'PUT', body);
-    toast('Saved', 'Restaurant details updated');
+    toast('Saved', 'Restaurant updated');
   } catch (e) { showAlert('ownAlert', 'danger', e.message); }
 }
 
@@ -282,28 +324,8 @@ async function deleteFood(id) {
   catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
-// ---------- Profile view (info + location) ----------
+// ---------- Restaurant profile (location map, used inside Settings) ----------
 let profileMap = null, profileMarker = null;
-async function loadProfileView() {
-  try {
-    const r = await api('/restaurant-owner/restaurant');
-    window._rest = r;
-    document.getElementById('pfName').value = r.name || '';
-    document.getElementById('pfPhone').value = r.phone || '';
-    document.getElementById('pfDesc').value = r.description || '';
-    document.getElementById('pfCuisine').value = r.cuisine || '';
-    document.getElementById('pfEta').value = r.etaMinutes != null ? r.etaMinutes : '';
-    document.getElementById('pfFee').value = r.deliveryFee != null ? r.deliveryFee : '';
-    document.getElementById('pfMin').value = r.minOrderTotal != null ? r.minOrderTotal : '';
-    document.getElementById('pfImg').value = r.imageUrl || '';
-    document.getElementById('pfCity').value = r.city || '';
-    document.getElementById('pfStreet').value = r.street || '';
-    document.getElementById('pfBuilding').value = r.buildingNumber || '';
-    document.getElementById('pfApartment').value = r.apartment || '';
-    document.getElementById('pfDetails').value = r.details || '';
-  } catch (e) { showAlert('profileAlert', 'danger', e.message); }
-  setTimeout(() => { initProfileMap(); if (profileMap) profileMap.invalidateSize(); }, 200);
-}
 function initProfileMap() {
   const el = document.getElementById('profileMap');
   if (!el || profileMap) return;
@@ -347,31 +369,6 @@ async function searchRestaurantAddress() {
     toast('Location set', data[0].display_name);
   } catch (e) { toast('Error', e.message, 'err'); }
 }
-async function saveProfileView() {
-  clearAlert('profileAlert');
-  const body = {
-    name: document.getElementById('pfName').value,
-    description: document.getElementById('pfDesc').value,
-    imageUrl: document.getElementById('pfImg').value,
-    cuisine: document.getElementById('pfCuisine').value,
-    etaMinutes: document.getElementById('pfEta').value || null,
-    deliveryFee: document.getElementById('pfFee').value || null,
-    minOrderTotal: document.getElementById('pfMin').value || null,
-    phone: document.getElementById('pfPhone').value || null,
-    city: document.getElementById('pfCity').value || null,
-    street: document.getElementById('pfStreet').value || null,
-    buildingNumber: document.getElementById('pfBuilding').value || null,
-    apartment: document.getElementById('pfApartment').value || null,
-    details: document.getElementById('pfDetails').value || null,
-    latitude: profileMarker ? profileMarker.getLatLng().lat : (window._rest && window._rest.latitude),
-    longitude: profileMarker ? profileMarker.getLatLng().lng : (window._rest && window._rest.longitude)
-  };
-  try {
-    await api('/restaurant-owner/restaurant', 'PUT', body);
-    toast('Saved', 'Restaurant profile updated');
-    loadRestaurant();
-  } catch (e) { showAlert('profileAlert', 'danger', e.message); }
-}
 
 // ---------- Earnings / Wallet ----------
 async function loadEarnings() {
@@ -384,7 +381,7 @@ async function loadEarnings() {
       ? `<table class="table wagba"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th class="text-end">Amount</th></tr></thead><tbody>`
         + txns.map(t => `<tr><td>${fmtDateTime(t.createdAt)}</td><td>${t.type}</td><td>${escapeHtml(t.description || '')}</td><td class="text-end ${t.type === 'CREDIT' ? 'text-success' : 'text-danger'} fw-semibold">${t.type === 'CREDIT' ? '+' : '-'}${money(t.amount)}</td></tr>`).join('')
         + `</tbody></table>`
-      : '<p class="muted small">No transactions yet. You\'ll be paid into your wallet when card orders are delivered.</p>';
+      : '<div class="empty-txns"><i class="bi bi-receipt"></i><div>No transactions yet</div><div class="small">You\'ll be paid into your wallet when card orders are delivered.</div></div>';
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 

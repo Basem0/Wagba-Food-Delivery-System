@@ -2,6 +2,9 @@
 boot('ADMIN', init);
 
 function init() {
+  if (window.innerWidth <= 600) {
+    document.querySelector('.content')?.classList.add('admin-mobile');
+  }
   window.VIEWS = {
     overview: { title: 'Overview', sub: 'Platform at a glance' },
     restaurants: { title: 'Restaurants', sub: 'Approve and manage kitchens' },
@@ -26,7 +29,7 @@ function init() {
 function renderSettings() {
   const root = document.getElementById('view-settings');
   if (!root) return;
-  root.innerHTML = renderSettingsShell('');
+  root.innerHTML = renderSettingsShell({});
   loadAccountSettings();
 }
 
@@ -84,7 +87,7 @@ async function loadRestaurants() {
     const el = document.getElementById('restList');
     if (!list.length) { el.innerHTML = emptyState('bi-shop', 'Nothing here', 'No restaurants for this filter.'); return; }
     el.innerHTML = list.map(r => `
-      <div class="col-md-6"><div class="entity-card">
+      <div class="col-12 col-md-6"><div class="entity-card">
         <div class="ec-head">
           <div class="ec-avatar"><i class="bi bi-shop"></i></div>
           <div class="ec-id"><b>${escapeHtml(r.name)}</b><div class="muted small">${escapeHtml(r.ownerEmail || '')}</div></div>
@@ -125,7 +128,7 @@ async function loadDrivers() {
     const el = document.getElementById('driverList');
     if (!list.length) { el.innerHTML = emptyState('bi-bicycle', 'Nothing here', 'No drivers for this filter.'); return; }
     el.innerHTML = list.map(d => `
-      <div class="col-md-6"><div class="entity-card">
+      <div class="col-12 col-md-6"><div class="entity-card">
         <div class="ec-head">
           <div class="ec-avatar"><i class="bi bi-person-badge"></i></div>
           <div class="ec-id"><b>${escapeHtml(d.name)}</b><div class="muted small">${escapeHtml(d.email || '')}</div></div>
@@ -162,15 +165,43 @@ async function loadUsers() {
     qs.set('page', '0'); qs.set('size', '100');
     const page = await api('/admin/users?' + qs.toString());
     const list = page.content || [];
-    document.getElementById('userRows').innerHTML = list.map(u => `<tr>
-      <td>${u.id}</td>
-      <td><div class="cell-name"><div class="cell-avatar" style="width:30px;height:30px;font-size:.85rem">${escapeHtml(initials(u.name))}</div>${escapeHtml(u.name)}</div></td>
-      <td>${escapeHtml(u.email)}</td><td>${roleBadge(u.role)}</td><td>${statusBadge(u.status)}</td>
-      <td class="d-flex gap-1 flex-wrap">
-        <button class="btn btn-sm btn-outline-warning" onclick="suspendUser(${u.id})">Suspend</button>
-        <button class="btn btn-sm btn-outline-success" onclick="activateUser(${u.id})">Activate</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})">Delete</button>
-      </td></tr>`).join('');
+    const isMobile = window.innerWidth <= 600;
+    if (isMobile) {
+      let cardContainer = document.getElementById('userCardList');
+      if (!cardContainer) {
+        const tbl = document.querySelector('#view-users .scroll-x');
+        if (tbl) { cardContainer = document.createElement('div'); cardContainer.id = 'userCardList'; cardContainer.className = 'user-card-list'; tbl.parentNode.insertBefore(cardContainer, tbl.nextSibling); }
+      }
+      if (cardContainer) {
+        cardContainer.innerHTML = list.map(u => `
+          <div class="user-card">
+            <div class="uc-top">
+              <div class="cell-avatar" style="width:36px;height:36px;font-size:.8rem">${escapeHtml(initials(u.name))}</div>
+              <div style="flex:1;min-width:0">
+                <div class="uc-name">${escapeHtml(u.name)}</div>
+                <div class="uc-email">${escapeHtml(u.email)}</div>
+              </div>
+              ${statusBadge(u.status)}
+            </div>
+            <div class="uc-meta">${roleBadge(u.role)}</div>
+            <div class="uc-actions">
+              <button class="btn btn-sm btn-outline-warning" onclick="suspendUser(${u.id})">Suspend</button>
+              <button class="btn btn-sm btn-outline-success" onclick="activateUser(${u.id})">Activate</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})">Delete</button>
+            </div>
+          </div>`).join('');
+      }
+    } else {
+      document.getElementById('userRows').innerHTML = list.map(u => `<tr>
+        <td>${u.id}</td>
+        <td><div class="cell-name"><div class="cell-avatar" style="width:30px;height:30px;font-size:.85rem">${escapeHtml(initials(u.name))}</div>${escapeHtml(u.name)}</div></td>
+        <td>${escapeHtml(u.email)}</td><td>${roleBadge(u.role)}</td><td>${statusBadge(u.status)}</td>
+        <td class="d-flex gap-1 flex-wrap">
+          <button class="btn btn-sm btn-outline-warning" onclick="suspendUser(${u.id})">Suspend</button>
+          <button class="btn btn-sm btn-outline-success" onclick="activateUser(${u.id})">Activate</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})">Delete</button>
+        </td></tr>`).join('');
+    }
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
@@ -220,7 +251,7 @@ async function loadAdminCoupons() {
     const el = document.getElementById('couponList');
     if (!list.length) { el.innerHTML = '<p class="muted small mb-0">No coupons yet.</p>'; return; }
     el.innerHTML = list.map(c => `
-      <div class="col-md-6"><div class="coupon-ticket ${c.active ? '' : 'inactive'}">
+      <div class="col-12 col-md-6"><div class="coupon-ticket ${c.active ? '' : 'inactive'}">
         <div class="ct-left">
           <div class="ct-discount">${c.discountType === 'PERCENTAGE' ? c.value + '%' : money(c.value)}</div>
           <div class="ct-off">OFF</div>

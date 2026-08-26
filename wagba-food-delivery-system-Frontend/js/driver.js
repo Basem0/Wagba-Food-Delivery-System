@@ -6,11 +6,10 @@ function init() {
     dashboard: { title: 'Dashboard', sub: 'Your delivery overview' },
     available: { title: 'Available deliveries', sub: 'Pick up an order near you' },
     mine: { title: 'My Deliveries', sub: 'Track your active & past deliveries' },
-    profile: { title: 'Profile', sub: 'Your driver details' },
     earnings: { title: 'Earnings', sub: 'Wallet & payouts' },
     settings: { title: 'Settings', sub: 'Manage your account' }
   };
-  window.onNav = (v) => { if (v === 'available') loadAvailable(); if (v === 'mine') loadMine(); if (v === 'profile') loadDriverProfile(); if (v === 'earnings') loadDriverEarnings(); if (v === 'settings') renderSettings(); };
+  window.onNav = (v) => { if (v === 'available') loadAvailable(); if (v === 'mine') loadMine(); if (v === 'earnings') loadDriverEarnings(); if (v === 'settings') renderSettings(); };
   window.__realtimeRefresh = (p) => {
     renderDashboard();
     if (p && (p.type === 'AVAILABLE' || p.type === 'NEW_DELIVERY')) loadAvailable();
@@ -41,7 +40,7 @@ const DRIVER_SETTINGS_EXTRA = `
 function renderSettings() {
   const root = document.getElementById('view-settings');
   if (!root) return;
-  root.innerHTML = renderSettingsShell(DRIVER_SETTINGS_EXTRA);
+  root.innerHTML = renderSettingsShell({ panel: DRIVER_SETTINGS_EXTRA, label: 'Driver', icon: 'bicycle' });
   loadAccountSettings();
   loadDriverSettings();
 }
@@ -182,8 +181,10 @@ function openNavigation(d) {
   const rest = { lat: d.restaurantLatitude, lng: d.restaurantLongitude, name: d.restaurantName, addr: d.restaurantAddress };
   const cust = { lat: d.customerLatitude, lng: d.customerLongitude, name: d.customerName, addr: d.customerAddress };
   fillStops('navM_', rest, cust);
-  new bootstrap.Modal(document.getElementById('navModal')).show();
-  setTimeout(() => drawRouteMap('modal', 'navMapModal', rest, cust), 250);
+  const modalEl = document.getElementById('navModal');
+  const handler = () => drawRouteMap('modal', 'navMapModal', rest, cust);
+  modalEl.addEventListener('shown.bs.modal', handler, { once: true });
+  new bootstrap.Modal(modalEl).show();
 }
 function fillStops(prefix, rest, cust) {
   const rn = document.getElementById(prefix + 'RestName'), ra = document.getElementById(prefix + 'RestAddr');
@@ -283,32 +284,6 @@ function toggleLiveLocation() {
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
   );
 }
-// ---------- Profile view ----------
-async function loadDriverProfile() {
-  try {
-    const d = await api('/driver/profile');
-    document.getElementById('dpPhone').value = d.phoneNumber || '';
-    document.getElementById('dpNat').value = d.nationalId || '';
-    document.getElementById('dpVType').value = d.vehicleType || '';
-    document.getElementById('dpVNum').value = d.vehicleNumber || '';
-    document.getElementById('dpLic').value = d.licenseNumber || '';
-  } catch (e) { showAlert('driverProfileAlert', 'danger', e.message); }
-}
-async function saveDriverProfile() {
-  clearAlert('driverProfileAlert');
-  const body = {
-    phoneNumber: document.getElementById('dpPhone').value,
-    nationalId: document.getElementById('dpNat').value,
-    vehicleType: document.getElementById('dpVType').value,
-    vehicleNumber: document.getElementById('dpVNum').value,
-    licenseNumber: document.getElementById('dpLic').value
-  };
-  try {
-    await api('/driver/profile', 'PUT', body);
-    toast('Saved', 'Driver profile updated');
-  } catch (e) { showAlert('driverProfileAlert', 'danger', e.message); }
-}
-
 // ---------- Earnings / Wallet ----------
 async function loadDriverEarnings() {
   try {
@@ -320,7 +295,7 @@ async function loadDriverEarnings() {
       ? `<table class="table wagba"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th class="text-end">Amount</th></tr></thead><tbody>`
         + txns.map(t => `<tr><td>${fmtDateTime(t.createdAt)}</td><td>${t.type}</td><td>${escapeHtml(t.description || '')}</td><td class="text-end ${t.type === 'CREDIT' ? 'text-success' : 'text-danger'} fw-semibold">${t.type === 'CREDIT' ? '+' : '-'}${money(t.amount)}</td></tr>`).join('')
         + `</tbody></table>`
-      : '<p class="muted small">No transactions yet. You\'ll be paid into your wallet when you complete deliveries.</p>';
+      : '<div class="empty-txns"><i class="bi bi-receipt"></i><div>No transactions yet</div><div class="small">You\'ll be paid into your wallet when you complete deliveries.</div></div>';
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
