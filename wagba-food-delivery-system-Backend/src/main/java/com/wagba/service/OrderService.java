@@ -61,6 +61,7 @@ public class OrderService {
     private final NotificationService notificationService;
     private final ReviewRepository reviewRepository;
     private final WalletService walletService;
+    private final StripeService stripeService;
 
     @Value("${wagba.delivery.fee:15}")
     private BigDecimal defaultDeliveryFee;
@@ -84,8 +85,9 @@ public class OrderService {
                           CouponService couponService,
                           RealtimeService realtime,
                           NotificationService notificationService,
-                          ReviewRepository reviewRepository,
-                          WalletService walletService) {
+                           ReviewRepository reviewRepository,
+                           WalletService walletService,
+                           StripeService stripeService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.deliveryRepository = deliveryRepository;
@@ -100,6 +102,7 @@ public class OrderService {
         this.notificationService = notificationService;
         this.reviewRepository = reviewRepository;
         this.walletService = walletService;
+        this.stripeService = stripeService;
     }
 
     private User currentUser(String email) {
@@ -348,6 +351,15 @@ public class OrderService {
         }
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
+        // Release the card authorisation so no money is ever withdrawn for a cancelled order.
+        if (order.getPaymentMethod() == PaymentMethod.CARD && order.isPaid() && order.getPaymentReference() != null) {
+            try {
+                stripeService.cancelPaymentIntent(order.getPaymentReference());
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(OrderService.class)
+                        .warn("Could not release payment intent for order {}: {}", id, e.getMessage());
+            }
+        }
         deliveryRepository.findByOrder(order).ifPresent(d -> {
             d.setStatus(DeliveryStatus.CANCELLED);
             deliveryRepository.save(d);
@@ -392,6 +404,17 @@ public class OrderService {
         assertTransition(order, OrderStatus.ACCEPTED);
         order.setStatus(OrderStatus.ACCEPTED);
         orderRepository.save(order);
+        // Capture the card payment now that the restaurant accepted the order.
+        // (The card was only authorised at checkout, so cancelling before this point
+        // never withdraws any money.)
+        if (order.getPaymentMethod() == PaymentMethod.CARD && order.isPaid() && order.getPaymentReference() != null) {
+            try {
+                stripeService.capturePayment(order.getPaymentReference());
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(OrderService.class)
+                        .warn("Could not capture payment for order {}: {}", id, e.getMessage());
+            }
+        }
         notifyUser(order.getCustomer().getEmail(), "ORDER_ACCEPTED", "Order accepted",
                 "Your order #" + id + " was accepted by the restaurant", id);
         return toResponse(order);
@@ -696,7 +719,8 @@ public class OrderService {
                     oi.getFood().getName(),
                     oi.getQuantity(),
                     unit,
-                    line
+                    line,
+                    oi.getFood().getImageUrl()
             ));
         }
         Address addr = order.getDeliveryAddress();
@@ -712,6 +736,12 @@ public class OrderService {
         );
         String deliveryStatus = deliveryRepository.findByOrder(order)
                 .map(d -> d.getStatus().name()).orElse(null);
+        Long driverId = deliveryRepository.findByOrder(order)
+                .map(d -> d.getDriver() != null ? d.getDriver().getId() : null)
+                .orElse(null);
+        String driverName = deliveryRepository.findByOrder(order)
+                .map(d -> d.getDriver() != null ? d.getDriver().getName() : null)
+                .orElse(null);
         boolean reviewed = reviewRepository.existsByOrderId(order.getId());
         // Orders created before the breakdown columns existed have no stored
         // subtotal, so fall back to summing the line items.
@@ -737,7 +767,9 @@ public class OrderService {
                 order.getCustomerLongitude(),
                 reviewed,
                 order.getPaymentMethod() != null ? order.getPaymentMethod().name() : null,
-                order.isPaid()
+                order.isPaid(),
+                driverId,
+                driverName
         );
     }
 

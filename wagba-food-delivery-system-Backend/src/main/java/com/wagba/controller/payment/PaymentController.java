@@ -74,10 +74,10 @@ public class PaymentController {
     @PostMapping("/create-cart-intent")
     public Map<String, Object> createCartIntent() {
         CartResponse cart = cartService.getCart(SecurityUtil.getCurrentUserEmail());
-        if (cart.getItems() == null || cart.getItems().isEmpty()) {
+        if (cart.items() == null || cart.items().isEmpty()) {
             throw new RuntimeException("Your cart is empty");
         }
-        return stripeService.createPaymentIntent(cart.getTotal());
+        return stripeService.createPaymentIntent(cart.total());
     }
 
     /**
@@ -89,6 +89,19 @@ public class PaymentController {
         requireOwnOrder(request.getOrderId());
         return orderService.markPaid(SecurityUtil.getCurrentUserEmail(),
                 request.getOrderId(), request.getPaymentReference());
+    }
+
+    /**
+     * Captures the card payment for an order. Called when the restaurant accepts
+     * the order; the card was only authorised at checkout (manual capture).
+     */
+    @PostMapping("/capture")
+    public Map<String, Object> capture(@Valid @RequestBody PaymentRequest request) {
+        Order order = requireOwnOrder(request.getOrderId());
+        if (!order.isPaid() || order.getPaymentReference() == null) {
+            throw new RuntimeException("Order is not paid");
+        }
+        return stripeService.capturePayment(order.getPaymentReference());
     }
 
     private Order requireOwnOrder(Long orderId) {

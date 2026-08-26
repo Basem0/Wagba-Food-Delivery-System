@@ -8,6 +8,7 @@ import com.wagba.entity.Restaurant;
 import com.wagba.entity.Review;
 import com.wagba.entity.User;
 import com.wagba.entity.enums.OrderStatus;
+import com.wagba.entity.enums.ReviewType;
 import com.wagba.repository.DeliveryRepository;
 import com.wagba.repository.OrderRepository;
 import com.wagba.repository.RestaurantRepository;
@@ -56,11 +57,29 @@ public class ReviewService {
         if (order.getStatus() != OrderStatus.DELIVERED) {
             throw new RuntimeException("You can only review delivered orders");
         }
-        if (reviewRepository.findByOrder(order).stream().findAny().isPresent()) {
-            throw new RuntimeException("Review already exists for this order");
-        }
+        ReviewType type = request.getType() == null ? ReviewType.ORDER : request.getType();
+        Long targetId = request.getTargetId() == null ? 0L : request.getTargetId();
+
         if (request.getRating() == null || request.getRating() < 1 || request.getRating() > 5) {
             throw new RuntimeException("Rating must be between 1 and 5");
+        }
+
+        // Validate + de-duplicate per (order, customer, type, target).
+        if (type == ReviewType.ORDER) {
+            // targetId stays 0 for an order-level review.
+        } else if (type == ReviewType.DRIVER) {
+            Long driverId = deliveryRepository.findByOrder(order)
+                    .map(d -> d.getDriver() != null ? d.getDriver().getId() : null)
+                    .orElse(null);
+            if (driverId == null) throw new RuntimeException("This order has no driver yet");
+            if (!driverId.equals(targetId)) throw new RuntimeException("Invalid driver for this order");
+        } else if (type == ReviewType.ITEM) {
+            boolean ownsItem = order.getItems().stream()
+                    .anyMatch(oi -> oi.getFood() != null && oi.getFood().getId().equals(targetId));
+            if (!ownsItem) throw new RuntimeException("This item is not part of the order");
+        }
+        if (reviewRepository.findByOrderAndCustomerAndTypeAndTargetId(order, customer, type, targetId).isPresent()) {
+            throw new RuntimeException("You have already reviewed this");
         }
 
         Review review = new Review();
@@ -68,18 +87,23 @@ public class ReviewService {
         review.setCustomer(customer);
         review.setRating(request.getRating());
         review.setComment(request.getComment());
+        review.setType(type);
+        review.setTargetId(targetId);
         review = reviewRepository.save(review);
 
-        Restaurant restaurant = order.getRestaurant();
-        List<Review> allReviews = reviewRepository.findByOrderRestaurant(restaurant);
-        double avg = allReviews.stream().mapToInt(r -> r.getRating()).average().orElse(0.0);
-        restaurant.setAvgRating(Math.round(avg * 10.0) / 10.0);
-        restaurantRepository.save(restaurant);
+        // Food/driver feedback doesn't change the restaurant's rating.
+        if (type != ReviewType.DRIVER) {
+            Restaurant restaurant = order.getRestaurant();
+            List<Review> allReviews = reviewRepository.findByOrderRestaurant(restaurant);
+            double avg = allReviews.stream().mapToInt(r -> r.getRating()).average().orElse(0.0);
+            restaurant.setAvgRating(Math.round(avg * 10.0) / 10.0);
+            restaurantRepository.save(restaurant);
+        }
 
         return toResponse(review);
     }
 
-    public ReviewResponse getOrderReview(String email, Long orderId) {
+    public List<ReviewResponse> getOrderReviews(String email, Long orderId) {
         User customer = currentUser(email);
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
@@ -87,9 +111,8 @@ public class ReviewService {
             throw new RuntimeException("Order does not belong to you");
         }
         return reviewRepository.findByOrder(order).stream()
-                .findFirst()
                 .map(this::toResponse)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .toList();
     }
 
     public List<ReviewResponse> getMyReviews(String email) {
@@ -128,7 +151,9 @@ public class ReviewService {
                 order.getRestaurant().getId(),
                 order.getRestaurant().getName(),
                 driverId,
-                review.getCreatedAt() != null ? review.getCreatedAt().toString() : null
+                review.getCreatedAt() != null ? review.getCreatedAt().toString() : null,
+                review.getType() != null ? review.getType().name() : null,
+                review.getTargetId()
         );
     }
 }

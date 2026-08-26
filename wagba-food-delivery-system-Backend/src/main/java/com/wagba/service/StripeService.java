@@ -38,6 +38,10 @@ public class StripeService {
         PaymentIntentCreateParams params = PaymentIntentCreateParams.builder()
                 .setAmount(amountCents)
                 .setCurrency(currency)
+                // Authorise only at checkout; the charge is captured when the
+                // restaurant accepts the order. Cancelling before then releases the
+                // authorisation, so the customer is never actually charged.
+                .setCaptureMethod(PaymentIntentCreateParams.CaptureMethod.MANUAL)
                 .build();
         try {
             PaymentIntent intent = PaymentIntent.create(params);
@@ -49,6 +53,52 @@ public class StripeService {
             return result;
         } catch (StripeException e) {
             throw new RuntimeException("Stripe error: " + e.getMessage());
+        }
+    }
+
+    /** Captures a previously authorised (manual) PaymentIntent. */
+    public Map<String, Object> capturePayment(String paymentIntentId) {
+        if (stripeApiKey == null || stripeApiKey.isBlank()) {
+            Map<String, Object> dev = new LinkedHashMap<>();
+            dev.put("id", paymentIntentId);
+            dev.put("status", "succeeded");
+            dev.put("devMode", true);
+            return dev;
+        }
+        Stripe.apiKey = stripeApiKey;
+        try {
+            PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
+            PaymentIntent captured = intent.capture();
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("id", captured.getId());
+            result.put("status", captured.getStatus());
+            result.put("devMode", false);
+            return result;
+        } catch (StripeException e) {
+            throw new RuntimeException("Stripe capture error: " + e.getMessage());
+        }
+    }
+
+    /** Releases an authorised (but not yet captured) PaymentIntent. */
+    public Map<String, Object> cancelPaymentIntent(String paymentIntentId) {
+        if (stripeApiKey == null || stripeApiKey.isBlank()) {
+            Map<String, Object> dev = new LinkedHashMap<>();
+            dev.put("id", paymentIntentId);
+            dev.put("status", "cancelled");
+            dev.put("devMode", true);
+            return dev;
+        }
+        Stripe.apiKey = stripeApiKey;
+        try {
+            PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
+            PaymentIntent cancelled = intent.cancel();
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("id", cancelled.getId());
+            result.put("status", cancelled.getStatus());
+            result.put("devMode", false);
+            return result;
+        } catch (StripeException e) {
+            throw new RuntimeException("Stripe cancel error: " + e.getMessage());
         }
     }
 

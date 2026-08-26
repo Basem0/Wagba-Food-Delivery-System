@@ -33,8 +33,8 @@ public class ReviewController {
 
     @GetMapping("/order/{orderId}")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ReviewResponse orderReview(@PathVariable Long orderId) {
-        return reviewService.getOrderReview(SecurityUtil.getCurrentUserEmail(), orderId);
+    public List<ReviewResponse> orderReviews(@PathVariable Long orderId) {
+        return reviewService.getOrderReviews(SecurityUtil.getCurrentUserEmail(), orderId);
     }
 
     @GetMapping("/restaurant/{restaurantId}")

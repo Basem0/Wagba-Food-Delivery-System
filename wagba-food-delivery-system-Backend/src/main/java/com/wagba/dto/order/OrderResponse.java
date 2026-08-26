@@ -23,6 +23,8 @@ public record OrderResponse(
         Double customerLongitude,
         boolean reviewed,
         String paymentMethod,
-        boolean paid
+        boolean paid,
+        Long driverId,
+        String driverName
 ) {
 }

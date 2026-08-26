@@ -9,6 +9,8 @@ public record ReviewResponse(
         Long restaurantId,
         String restaurantName,
         Long driverId,
-        String createdAt
+        String createdAt,
+        String type,
+        Long targetId
 ) {
 }

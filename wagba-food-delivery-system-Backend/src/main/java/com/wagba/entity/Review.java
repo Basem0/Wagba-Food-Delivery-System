@@ -1,19 +1,12 @@
 package com.wagba.entity;
 
+import com.wagba.entity.enums.ReviewType;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "reviews",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_review_order_customer",
-                        columnNames = {"order_id", "customer_id"}
-                )
-        }
-)
+@Table(name = "reviews")
 public class Review {
 
     @Id
@@ -26,8 +19,16 @@ public class Review {
     @Column(length = 1000)
     private String comment;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false, unique = true)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    private ReviewType type = ReviewType.ORDER;
+
+    /** Driver id (DRIVER), food id (ITEM) or 0 for an ORDER review. */
+    @Column(name = "target_id", nullable = true)
+    private Long targetId = 0L;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -66,6 +67,22 @@ public class Review {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public ReviewType getType() {
+        return type;
+    }
+
+    public void setType(ReviewType type) {
+        this.type = type;
+    }
+
+    public Long getTargetId() {
+        return targetId;
+    }
+
+    public void setTargetId(Long targetId) {
+        this.targetId = targetId;
     }
 
     public Order getOrder() {

@@ -7,6 +7,7 @@ public record OrderItemResponse(
         String foodName,
         int quantity,
         BigDecimal unitPrice,
-        BigDecimal subtotal
+        BigDecimal subtotal,
+        String imageUrl
 ) {
 }
