@@ -51,7 +51,6 @@ function init() {
     cart: { title: 'My Cart', sub: 'Review and checkout your items' },
     orders: { title: 'My Orders', sub: 'Track and manage your orders' },
     coupons: { title: 'My Coupons', sub: 'Your saved offers' },
-    reviews: { title: 'My Reviews', sub: 'Restaurants and meals you\'ve rated' },
     settings: { title: 'Settings', sub: 'Manage your account' }
   };
   window._offersOnly = false;
@@ -67,7 +66,7 @@ function init() {
   if (spN) spN.textContent = me.name || me.email || 'Customer';
   if (spE) spE.textContent = me.email || '';
   if (spA) spA.textContent = (me.name || me.email || 'C').trim().charAt(0).toUpperCase();
-  window.onNav = (v) => { if (v === 'cart') loadCart(); if (v === 'orders') loadOrders(); if (v === 'coupons') loadCoupons(); if (v === 'reviews') loadReviews(); if (v === 'settings') renderSettings(); };
+  window.onNav = (v) => { if (v === 'cart') loadCart(); if (v === 'orders') loadOrders(); if (v === 'coupons') loadCoupons(); if (v === 'settings') renderSettings(); };
   window.__realtimeRefresh = () => { loadOrders(); loadCart(); };
   navTo('restaurants');
   loadRestaurants();
@@ -858,32 +857,6 @@ function renderCouponList() {
   }).join('');
 }
 
-async function loadReviews() {
-  try {
-    showSkeletons('reviewList', 3, 300);
-    const list = await api('/reviews/mine');
-    const el = document.getElementById('reviewList');
-    if (!el) return;
-    if (!list.length) { el.innerHTML = emptyState('bi-star', 'No reviews yet', 'Rate a delivered order from the Orders tab.'); return; }
-    el.innerHTML = list.map(r => {
-      const stars = '★★★★★'.slice(0, r.rating || 0) + '☆☆☆☆☆'.slice(0, 5 - (r.rating || 0));
-      const name = r.foodName || r.restaurantName || 'Order';
-      const sub = r.foodName ? (r.restaurantName || 'Restaurant review') : 'Restaurant review';
-      return `<div class="review-card">
-        <div class="rv-top">
-          <div class="rv-ic"><i class="bi bi-${r.foodName ? 'egg-fried' : 'shop'}"></i></div>
-          <div class="flex-1">
-            <div class="rv-name">${escapeHtml(name)}</div>
-            <div class="rv-sub">${escapeHtml(sub)}</div>
-          </div>
-          <div class="rv-stars">${stars}</div>
-        </div>
-        ${r.comment ? `<div class="rv-comment">${escapeHtml(r.comment)}</div>` : ''}
-        <div class="rv-date">${r.createdAt ? escapeHtml(String(r.createdAt)) : ''}</div>
-      </div>`;
-    }).join('');
-  } catch (e) { showAlert('alertBox', 'danger', e.message); }
-}
 
 // ---------- Live Tracking ----------
 let trackTimer = null, trackMap = null, trackMarker = null, trackCustMarker = null, trackRestMarker = null;
