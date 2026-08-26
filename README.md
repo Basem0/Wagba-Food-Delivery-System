@@ -1,204 +1,104 @@
-# Wagba-Food-Delivery-System
+# Wagba — Food Delivery Platform
 
-## System Design
+Wagba is a full-stack food-delivery platform that connects **customers**, **restaurant owners**, **drivers**, and **administrators** in one delivery lifecycle. From discovering a restaurant to payment, preparation, delivery, earnings, and reviews, each user works through a dedicated role-based experience.
 
----
+> **Want the detailed technical view?** Read the complete [System Design](system-design.md) for requirements, data model, service boundaries, order lifecycle, and API design.
 
-## 1. Functional Requirements
+## The idea
 
-### Customer
+Food delivery is more than placing an order: it requires coordinating customers, restaurants, drivers, payments, and support operations in real time. Wagba models that workflow as one platform:
 
-- Customer should be able to register and login.
-- Customer should be able to browse available restaurants.
-- Customer should be able to view a restaurant's menu.
-- Customer should be able to add food items to a cart.
-- Customer should be able to update/remove items from the cart.
-- Customer should be able to place an order.
-- Customer should be able to provide/select a delivery address.
-- Customer should be able to view their orders.
-- Customer should be able to track the status of an active order.
-- Customer should be able to cancel an order when allowed.
-- Customer should be able to rate/review a completed order.
+| User | What they can do |
+| --- | --- |
+| **Customer** | Discover restaurants and menus, manage a cart and addresses, use coupons, pay, follow an order, save favorites, reorder, and leave reviews. |
+| **Restaurant owner** | Create and manage a restaurant, menu, categories, availability, incoming orders, preparation status, wallet, and earnings. |
+| **Driver** | Create a delivery profile, share location, accept delivery work, update pickup/delivery status, review earnings, and withdraw funds. |
+| **Admin** | Approve and moderate users, drivers, and restaurants; manage coupons; and monitor orders, analytics, and driver performance. |
 
-### Restaurant Owner
+## Key capabilities
 
-- Restaurant owner should be able to register.
-- Restaurant owner should be able to create a restaurant.
-- Restaurant owner should be able to update restaurant information.
-- Restaurant owner should be able to manage food categories.
-- Restaurant owner should be able to add/update/delete food items.
-- Restaurant owner should be able to mark food items as available/unavailable.
-- Restaurant owner should be able to view incoming orders.
-- Restaurant owner should be able to accept/reject orders.
-- Restaurant owner should be able to update the food preparation status.
+- Secure authentication with email verification, password reset, JWT, and Google sign-in.
+- Restaurant discovery, food catalogues, cart management, addresses, favorites, coupons, and reviews.
+- Card payments through Stripe, plus cash-order support.
+- Restaurant order handling and the complete driver delivery workflow.
+- Wallet, earnings, and withdrawal flows for restaurant owners and drivers.
+- Persisted notifications with live updates through WebSockets.
+- Admin moderation, operational statistics, analytics, and coupon management.
 
-### Driver
+## Architecture
 
-- Driver should be able to register.
-- Driver should be able to become available/unavailable for deliveries.
-- Driver should be able to view available delivery requests.
-- Driver should be able to accept a delivery.
-- Driver should be able to view delivery details.
-- Driver should be able to mark an order as picked up.
-- Driver should be able to mark an order as out for delivery.
-- Driver should be able to mark an order as delivered.
-- Driver should be able to view delivery history.
+Wagba has a static, role-based web frontend and a stateless Spring Boot backend. The frontend communicates with versioned REST endpoints using JWT authentication, while STOMP over SockJS is used for real-time notifications.
 
-### Admin
+```mermaid
+flowchart LR
+    Browser["Browser client<br/>Customer · Owner · Driver · Admin"]
+    API["Spring Boot API<br/>REST · JWT · Business Services"]
+    DB[(MySQL)]
+    WS["STOMP / SockJS<br/>Live notifications"]
+    External["Stripe · SMTP · Google Identity · Upload Storage"]
 
-- Admin should be able to login.
-- Admin should be able to view/manage users.
-- Admin should be able to activate/deactivate users.
-- Admin should be able to review restaurant registration requests.
-- Admin should be able to approve/reject restaurants.
-- Admin should be able to review driver registration requests.
-- Admin should be able to approve/reject drivers.
-- Admin should be able to view all orders.
-- Admin should be able to monitor the overall system.
-
----
-
-## 2. Non-Functional Requirements
-
-### 01- Performance
-
-- Restaurant listing API should normally respond within 500ms under expected load.
-- Menu retrieval should normally respond within 500ms.
-
-### 02- Availability
-
-- The system should remain available during normal operating hours.
-- A failure in one operation should not corrupt existing orders.
-
-### 03- Security
-
-- Passwords must never be stored as plain text.
-- Authenticated endpoints must require valid authentication.
-- Users must only access resources they are authorized to access.
-- Customer should not be able to access restaurant-owner/admin operations.
-
-### 04- Data Integrity
-
-- An order must preserve the price of food at the time the order was created.
-- An order must not reference unavailable/nonexistent food.
-- Order status transitions must follow valid business rules.
-- Order creation should be transactional.
-
-### 05- Scalability
-
-Architecture must allow us to increase Number of :
-
-- Customers
-- Restaurants
-- Orders
-- Drivers
-
----
-
-## 3- Core Entites
-
-- User
-- Restaurant
-- Food
-- Category
-- Cart
-- CartItem
-- Order
-- OrderItem
-- Address
-- Delivery
-- Review
-
----
-
-## 4. API / System Interface
-
-### 1- Authentication
-
-```http
-POST /api/v1/auth/register
-POST /api/v1/auth/login
-POST /api/v1/auth/logout
+    Browser -->|"HTTPS REST + JWT"| API
+    Browser <-->|"WebSocket /ws"| WS
+    WS --- API
+    API -->|"JPA"| DB
+    API --> External
 ```
 
-### 2- Restaurants
+The full high-level design, including domain services and the order-state flow, is available in the [System Design](system-design.md#5-high-level-design).
 
-```http
-GET    /api/v1/restaurants
-GET    /api/v1/restaurants/{restaurantId}
-POST   /api/v1/restaurants
-PUT    /api/v1/restaurants/{restaurantId}
-DELETE /api/v1/restaurants/{restaurantId}
+## Technology stack
+
+| Area | Technologies |
+| --- | --- |
+| **Backend** | Java 21, Spring Boot 4, Spring MVC, Spring Security, Spring Data JPA, Maven |
+| **Database** | MySQL 8+; H2 for automated backend tests |
+| **Frontend** | HTML, CSS, vanilla JavaScript, Bootstrap 5 |
+| **Authentication** | JWT, BCrypt password hashing, email verification, Google ID token verification |
+| **Real-time** | Spring WebSocket, STOMP, SockJS |
+| **Payments** | Stripe PaymentIntents and Stripe.js |
+| **Maps & location** | Leaflet and browser geolocation |
+| **Email & uploads** | Spring Mail / SMTP and local file storage |
+
+## Project structure
+
+```text
+.
+├── README.md                                  # Project overview and setup
+├── system-design.md                           # Detailed design and diagrams
+├── CONTRIBUTING.md                            # Contribution guide
+├── SECURITY.md                                # Vulnerability-reporting policy
+├── .github/workflows/backend-ci.yml           # Backend test workflow
+├── wagba-food-delivery-system-Frontend/       # Role-based static web application
+│   ├── index.html                             # Public entry point and authentication
+│   ├── customer.html | owner.html | driver.html | admin.html
+│   ├── css/styles.css                         # Shared UI styles
+│   └── js/                                    # Shared, customer, owner, driver, admin logic
+└── wagba-food-delivery-system-Backend/        # Spring Boot API
+    ├── src/main/java/com/wagba/
+    │   ├── controller/                        # REST endpoints grouped by domain
+    │   ├── service/                           # Business rules and workflows
+    │   ├── entity/                            # JPA domain entities and enums
+    │   ├── repository/                        # Database access
+    │   ├── security/                          # JWT and Google-token security
+    │   └── config/                            # Security, CORS, WebSocket configuration
+    ├── src/main/resources/                    # Runtime configuration template
+    └── src/test/                              # H2-backed automated tests
 ```
 
-### 3- Foods
+## Current constraints and production considerations
 
-```http
-GET    /api/v1/restaurants/{restaurantId}/foods
-POST   /api/v1/foods
-GET    /api/v1/foods/{foodId}
-PUT    /api/v1/foods/{foodId}
-DELETE /api/v1/foods/{foodId}
-```
+These constraints are intentional for the current stage of the project and should be addressed before a production-scale deployment:
 
-### 4-Cart
+- **Single-instance real time:** the built-in STOMP simple broker is appropriate for local/single-instance deployment. A shared message broker is needed when horizontally scaling the API.
+- **Local uploads:** uploaded files are stored locally. Use object storage and a CDN for durable, multi-instance production storage.
+- **Development CORS:** CORS and WebSocket origins are currently open to support local development. Restrict them to the deployed frontend domain before release.
+- **Configuration secrets:** database, JWT, Stripe, SMTP, Google, and admin credentials belong in the ignored local `application.properties` file or a secure secret manager—not in Git.
+- **External dependencies:** card payments, email verification, password reset, and Google sign-in require valid third-party credentials and network access.
+- **Frontend API host:** the current browser client targets `http://localhost:8082/api/v1`; configure this value for a deployed environment.
 
-```http
-GET    /api/v1/cart
-POST   /api/v1/cart/items
-PUT    /api/v1/cart/items/{foodId}
-DELETE /api/v1/cart/items/{foodId}
-DELETE /api/v1/cart
-```
+See the [System Design](system-design.md#9-real-time-communication) for further scaling and operational considerations.
 
-### 5-Orders
+## Contributing and security
 
-```http
-POST /api/v1/orders
-GET  /api/v1/orders
-GET  /api/v1/orders/{orderId}
-POST /api/v1/orders/{orderId}/cancel
-```
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. For vulnerabilities, please follow [SECURITY.md](SECURITY.md) and avoid creating a public issue with sensitive details.
 
-### 6- Restaurant Owner:
-
-```http
-GET  /api/v1/restaurant/orders
-POST /api/v1/orders/{orderId}/accept
-POST /api/v1/orders/{orderId}/reject
-POST /api/v1/orders/{orderId}/preparing
-POST /api/v1/orders/{orderId}/ready
-```
-
-### 7- Driver:
-
-```http
-GET  /api/v1/deliveries/available
-POST /api/v1/deliveries/{deliveryId}/accept
-POST /api/v1/deliveries/{deliveryId}/pickup
-POST /api/v1/deliveries/{deliveryId}/out-for-delivery
-POST /api/v1/deliveries/{deliveryId}/complete
-```
-
-### 8- Admin:
-
-```http
-GET   /api/v1/admin/users
-PATCH /api/v1/admin/users/{userId}/status
-
-GET   /api/v1/admin/restaurants
-POST  /api/v1/admin/restaurants/{id}/approve
-POST  /api/v1/admin/restaurants/{id}/reject
-
-GET   /api/v1/admin/drivers
-POST  /api/v1/admin/drivers/{id}/approve
-POST  /api/v1/admin/drivers/{id}/reject
-
-GET   /api/v1/admin/orders
-```
-
----
-
-## High Level Desgin
-
-<img width="671" height="420" alt="image" src="https://github.com/user-attachments/assets/e0cf3e94-036d-4079-bf6b-bad9bf2eb509" />

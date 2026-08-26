@@ -3,3 +3,20 @@ wagba-food-delivery-system-Backend/src/main/resources/application.properties
 
 # Maven build artifacts
 target/
+**/target/
+
+# Frontend/package tooling
+node_modules/
+dist/
+coverage/
+
+# Runtime uploads
+uploads/
+wagba-food-delivery-system-Backend/uploads/
+
+# IDE and OS files
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db

@@ -41,4 +41,5 @@ wagba.delivery.driver-share=0.85
 # Commission the platform keeps from the restaurant's food revenue.
 wagba.platform.fee-rate=0.10
 
-server.port=8081
+# Matches wagba-food-delivery-system-Frontend/js/common.js
+server.port=8082

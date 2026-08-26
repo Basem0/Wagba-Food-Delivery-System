@@ -113,8 +113,10 @@ function boot(role, cb) {
     bd.addEventListener('click', () => toggleSidebar(false));
     document.body.appendChild(bd);
   }
-  const u = getUser();
-  if (u && u.role === role) { renderNav(u); renderBottomNav(u); cb(u); connectRealtime(); return; }
+  // Always confirm the session against the API. The cached user can belong to a
+  // previous login while the stored JWT belongs to a different role; rendering
+  // that stale dashboard then causes role-protected calls (such as /favorites)
+  // to fail with 403.
   api('/auth/me').then(me => {
     setUser(me);
     if (me.role !== role) { location.href = dashFor(me.role); return; }
