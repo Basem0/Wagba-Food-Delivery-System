@@ -84,21 +84,3 @@ The full high-level design, including domain services and the order-state flow, 
     ├── src/main/resources/                    # Runtime configuration template
     └── src/test/                              # H2-backed automated tests
 ```
-
-## Current constraints and production considerations
-
-These constraints are intentional for the current stage of the project and should be addressed before a production-scale deployment:
-
-- **Single-instance real time:** the built-in STOMP simple broker is appropriate for local/single-instance deployment. A shared message broker is needed when horizontally scaling the API.
-- **Local uploads:** uploaded files are stored locally. Use object storage and a CDN for durable, multi-instance production storage.
-- **Development CORS:** CORS and WebSocket origins are currently open to support local development. Restrict them to the deployed frontend domain before release.
-- **Configuration secrets:** database, JWT, Stripe, SMTP, Google, and admin credentials belong in the ignored local `application.properties` file or a secure secret manager—not in Git.
-- **External dependencies:** card payments, email verification, password reset, and Google sign-in require valid third-party credentials and network access.
-- **Frontend API host:** the current browser client targets `http://localhost:8082/api/v1`; configure this value for a deployed environment.
-
-See the [System Design](system-design.md#9-real-time-communication) for further scaling and operational considerations.
-
-## Contributing and security
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. For vulnerabilities, please follow [SECURITY.md](SECURITY.md) and avoid creating a public issue with sensitive details.
-
