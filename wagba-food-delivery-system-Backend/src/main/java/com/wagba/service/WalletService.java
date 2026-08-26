@@ -115,4 +115,31 @@ public class WalletService {
     public WalletResponse myWallet() {
         return getWalletInfo(currentUser().getEmail());
     }
+
+    public java.util.List<java.util.Map<String, Object>> getEarningsChart(String email, int days) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Wallet wallet = getOrCreateWallet(user);
+        java.time.LocalDateTime since = java.time.LocalDateTime.now().minusDays(days);
+        List<WalletTransaction> txns = walletTransactionRepository
+                .findByWalletIdOrderByCreatedAtDesc(wallet.getId(), PageRequest.of(0, 500))
+                .getContent();
+        java.util.Map<String, java.math.BigDecimal> daily = new java.util.LinkedHashMap<>();
+        for (java.time.LocalDate d = java.time.LocalDate.now().minusDays(days - 1);
+             !d.isAfter(java.time.LocalDate.now()); d = d.plusDays(1)) {
+            daily.put(d.toString(), java.math.BigDecimal.ZERO);
+        }
+        for (WalletTransaction t : txns) {
+            if (t.getType() == WalletTxnType.CREDIT && t.getCreatedAt() != null && t.getCreatedAt().isAfter(since)) {
+                String day = t.getCreatedAt().toLocalDate().toString();
+                daily.merge(day, t.getAmount(), java.math.BigDecimal::add);
+            }
+        }
+        return daily.entrySet().stream().map(e -> {
+            java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("date", e.getKey());
+            m.put("amount", e.getValue());
+            return m;
+        }).toList();
+    }
 }

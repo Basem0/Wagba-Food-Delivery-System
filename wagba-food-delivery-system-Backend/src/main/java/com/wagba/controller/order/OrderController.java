@@ -8,6 +8,7 @@ import com.wagba.security.SecurityUtil;
 import com.wagba.service.OrderService;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,5 +48,11 @@ public class OrderController {
     @GetMapping("/{id}/tracking")
     public TrackingResponse tracking(@PathVariable Long id) {
         return orderService.tracking(SecurityUtil.getCurrentUserEmail(), id);
+    }
+
+    @PostMapping("/{id}/reorder")
+    public ResponseEntity<String> reorder(@PathVariable Long id) {
+        orderService.reorder(SecurityUtil.getCurrentUserEmail(), id);
+        return ResponseEntity.ok("Items added to cart");
     }
 }

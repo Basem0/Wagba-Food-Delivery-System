@@ -154,4 +154,14 @@ public class AdminController {
     public Map<String, Object> stats() {
         return adminService.getStats();
     }
+
+    @GetMapping("/analytics")
+    public Map<String, Object> analytics() {
+        return adminService.getAnalytics();
+    }
+
+    @GetMapping("/drivers/{driverId}/performance")
+    public Map<String, Object> driverPerformance(@PathVariable Long driverId) {
+        return adminService.getDriverPerformance(driverId);
+    }
 }

@@ -39,4 +39,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /** Null when no order has that status yet. */
     @Query("SELECT SUM(o.totalPrice) FROM Order o WHERE o.status = :status")
     BigDecimal sumTotalByStatus(@Param("status") OrderStatus status);
+
+    @Query("SELECT SUM(o.totalPrice) FROM Order o WHERE o.status = 'DELIVERED' AND o.createdAt >= :start")
+    BigDecimal sumRevenueSince(@Param("start") java.time.LocalDateTime start);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start")
+    long countSince(@Param("start") java.time.LocalDateTime start);
 }

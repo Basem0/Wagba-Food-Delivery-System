@@ -113,6 +113,18 @@ public class FoodService {
                 .toList();
     }
 
+    public FoodResponse toggleAvailability(String email, Long foodId) {
+        User owner = loadCurrentUser(email);
+        Food food = foodRepository.findById(foodId)
+                .orElseThrow(() -> new RuntimeException("Food not found"));
+        if (!food.getCategory().getRestaurant().equals(getOwnRestaurant(owner))) {
+            throw new RuntimeException("Food does not belong to your restaurant");
+        }
+        food.setAvailable(!food.isAvailable());
+        foodRepository.save(food);
+        return toResponse(food);
+    }
+
     private FoodResponse toResponse(Food food) {
         BigDecimal discount = food.getDiscountPrice();
         boolean offer = discount != null && discount.compareTo(BigDecimal.ZERO) > 0

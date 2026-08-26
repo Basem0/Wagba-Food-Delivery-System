@@ -7,6 +7,7 @@ import com.wagba.entity.User;
 import com.wagba.entity.enums.OnboardingStatus;
 import com.wagba.entity.enums.UserRole;
 import com.wagba.entity.enums.UserStatus;
+import com.wagba.repository.DeliveryRepository;
 import com.wagba.repository.DriverRepository;
 import com.wagba.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -19,13 +20,16 @@ public class DriverService {
 
     private final UserRepository userRepository;
     private final DriverRepository driverRepository;
+    private final DeliveryRepository deliveryRepository;
 
     public DriverService(
             UserRepository userRepository,
-            DriverRepository driverRepository
+            DriverRepository driverRepository,
+            DeliveryRepository deliveryRepository
     ) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
+        this.deliveryRepository = deliveryRepository;
     }
 
     /**
@@ -127,5 +131,23 @@ public class DriverService {
         if (request.getVehicleNumber() != null) driver.setVehicleNumber(request.getVehicleNumber());
         if (request.getLicenseNumber() != null) driver.setLicenseNumber(request.getLicenseNumber());
         driverRepository.save(driver);
+    }
+
+    public java.util.Map<String, Object> getEarningsReport(String email, String period) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        java.time.LocalDateTime since;
+        if ("weekly".equals(period)) {
+            since = java.time.LocalDateTime.now().minusWeeks(1);
+        } else {
+            since = java.time.LocalDateTime.now().minusDays(1);
+        }
+        java.math.BigDecimal totalEarnings = deliveryRepository.sumEarningsSince(user, since);
+        long totalDeliveries = deliveryRepository.countDeliveriesSince(user, since);
+        return java.util.Map.of(
+                "period", period,
+                "totalEarnings", totalEarnings != null ? totalEarnings : java.math.BigDecimal.ZERO,
+                "totalDeliveries", totalDeliveries
+        );
     }
 }

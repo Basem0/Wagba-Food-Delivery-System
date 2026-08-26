@@ -13,6 +13,8 @@ import com.wagba.repository.FoodRepository;
 import com.wagba.repository.OrderRepository;
 import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.UserRepository;
+import com.wagba.repository.DeliveryRepository;
+import com.wagba.repository.ReviewRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +24,9 @@ import org.springframework.stereotype.Service;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 
 @Service
 public class AdminService {
@@ -31,17 +36,23 @@ public class AdminService {
     private final RestaurantRepository restaurantRepository;
     private final OrderRepository orderRepository;
     private final FoodRepository foodRepository;
+    private final DeliveryRepository deliveryRepository;
+    private final ReviewRepository reviewRepository;
 
     public AdminService(UserRepository userRepository,
                         DriverRepository driverRepository,
                         RestaurantRepository restaurantRepository,
                         OrderRepository orderRepository,
-                        FoodRepository foodRepository) {
+                        FoodRepository foodRepository,
+                        DeliveryRepository deliveryRepository,
+                        ReviewRepository reviewRepository) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.restaurantRepository = restaurantRepository;
         this.orderRepository = orderRepository;
         this.foodRepository = foodRepository;
+        this.deliveryRepository = deliveryRepository;
+        this.reviewRepository = reviewRepository;
     }
 
     // ---------- List / query methods ----------
@@ -308,5 +319,53 @@ public class AdminService {
         User user = requireDriver(driverId);
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
+    }
+
+    public Map<String, Object> getAnalytics() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        LocalDateTime now = LocalDateTime.now();
+        m.put("totalCustomers", userRepository.countByRole(UserRole.CUSTOMER));
+        m.put("totalDrivers", userRepository.countByRole(UserRole.DRIVER));
+        m.put("totalOwners", userRepository.countByRole(UserRole.RESTAURANT_OWNER));
+        m.put("totalRestaurants", restaurantRepository.count());
+        m.put("totalOrders", orderRepository.count());
+        BigDecimal totalRevenue = orderRepository.sumTotalByStatus(com.wagba.entity.enums.OrderStatus.DELIVERED);
+        m.put("totalRevenue", totalRevenue != null ? totalRevenue : BigDecimal.ZERO);
+        m.put("ordersToday", orderRepository.countSince(now.toLocalDate().atStartOfDay()));
+        BigDecimal revenueToday = orderRepository.sumRevenueSince(now.toLocalDate().atStartOfDay());
+        m.put("revenueToday", revenueToday != null ? revenueToday : BigDecimal.ZERO);
+        m.put("ordersThisWeek", orderRepository.countSince(now.minusWeeks(1)));
+        BigDecimal revenueWeek = orderRepository.sumRevenueSince(now.minusWeeks(1));
+        m.put("revenueThisWeek", revenueWeek != null ? revenueWeek : BigDecimal.ZERO);
+        m.put("ordersThisMonth", orderRepository.countSince(now.minusMonths(1)));
+        BigDecimal revenueMonth = orderRepository.sumRevenueSince(now.minusMonths(1));
+        m.put("revenueThisMonth", revenueMonth != null ? revenueMonth : BigDecimal.ZERO);
+        return m;
+    }
+
+    public Map<String, Object> getDriverPerformance(Long driverId) {
+        User user = requireDriver(driverId);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("driverId", user.getId());
+        m.put("name", user.getName());
+        m.put("email", user.getEmail());
+        m.put("status", user.getStatus().name());
+        com.wagba.entity.Driver drv = driverRepository.findByUser(user).orElse(null);
+        if (drv != null) {
+            m.put("vehicleType", drv.getVehicleType());
+            m.put("vehicleNumber", drv.getVehicleNumber());
+        }
+        long totalDeliveries = deliveryRepository.countByDriver(user);
+        m.put("totalDeliveries", totalDeliveries);
+        BigDecimal totalEarnings = deliveryRepository.sumEarningsSince(user, LocalDateTime.MIN);
+        m.put("totalEarnings", totalEarnings != null ? totalEarnings : BigDecimal.ZERO);
+        com.wagba.entity.Driver drvEntity = driverRepository.findByUser(user).orElse(null);
+        if (drvEntity != null) {
+            Double avgRating = reviewRepository.avgRatingByDriver(drvEntity.getId());
+            m.put("avgRating", avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : null);
+            long reviewCount = reviewRepository.countByDriver(drvEntity.getId());
+            m.put("reviewCount", reviewCount);
+        }
+        return m;
     }
 }

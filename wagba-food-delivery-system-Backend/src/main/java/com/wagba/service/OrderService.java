@@ -522,6 +522,15 @@ public class OrderService {
         return new PageResponse<>(dp.getContent(), dp.getNumber(), dp.getSize(), dp.getTotalElements(), dp.getTotalPages());
     }
 
+    public PageResponse<DeliveryResponse> myDeliveriesFiltered(String email, DeliveryStatus status, Pageable pageable) {
+        User driver = currentUser(email);
+        Page<Delivery> p = status != null
+                ? deliveryRepository.findByDriverAndStatus(driver, status, pageable)
+                : deliveryRepository.findByDriver(driver, pageable);
+        Page<DeliveryResponse> dp = p.map(this::toDeliveryResponse);
+        return new PageResponse<>(dp.getContent(), dp.getNumber(), dp.getSize(), dp.getTotalElements(), dp.getTotalPages());
+    }
+
     public DeliveryResponse acceptDelivery(String email, Long deliveryId) {
         User driver = currentUser(email);
         List<DeliveryStatus> activeStatuses = List.of(DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.OUT_FOR_DELIVERY);
@@ -742,6 +751,49 @@ public class OrderService {
     }
 
     // ---------- Realtime ----------
+
+    public void reorder(String email, Long orderId) {
+        User customer = currentUser(email);
+        Order order = orderRepository.findByCustomerAndId(customer, orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        if (order.getStatus() != OrderStatus.DELIVERED && order.getStatus() != OrderStatus.CANCELLED) {
+            throw new RuntimeException("Can only reorder delivered or cancelled orders");
+        }
+        Restaurant restaurant = order.getRestaurant();
+        if (restaurant.getStatus() != RestaurantStatus.APPROVED) {
+            throw new RuntimeException(restaurant.getName() + " is not accepting orders right now");
+        }
+        Cart cart = cartRepository.findByUser(customer)
+                .orElseGet(() -> {
+                    Cart c = new Cart();
+                    c.setUser(customer);
+                    return cartRepository.save(c);
+                });
+        if (!cart.getItems().isEmpty()) {
+            Restaurant cartRest = cart.getItems().get(0).getFood().getCategory().getRestaurant();
+            if (!cartRest.getId().equals(restaurant.getId())) {
+                cartItemRepository.deleteAll(cart.getItems());
+                cart.getItems().clear();
+            }
+        }
+        for (OrderItem oi : order.getItems()) {
+            Food food = oi.getFood();
+            if (!food.isAvailable()) continue;
+            var existing = cartItemRepository.findByCartAndFood(cart, food);
+            if (existing.isPresent()) {
+                CartItem ci = existing.get();
+                ci.setQuantity(ci.getQuantity() + oi.getQuantity());
+                cartItemRepository.save(ci);
+            } else {
+                CartItem ci = new CartItem();
+                ci.setCart(cart);
+                ci.setFood(food);
+                ci.setQuantity(oi.getQuantity());
+                cartItemRepository.save(ci);
+                cart.getItems().add(ci);
+            }
+        }
+    }
 
     private void notifyUser(String email, String type, String title, String message, Long orderId) {
         if (email == null) return;

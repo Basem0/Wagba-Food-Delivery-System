@@ -103,9 +103,20 @@ public class RestaurantOwnerController {
         return foodService.getMyRestaurantFoods(SecurityUtil.getCurrentUserEmail());
     }
 
+    @PutMapping("/foods/{id}/availability")
+    public FoodResponse toggleAvailability(@PathVariable Long id) {
+        return foodService.toggleAvailability(SecurityUtil.getCurrentUserEmail(), id);
+    }
+
     @GetMapping("/wallet")
     public com.wagba.dto.wallet.WalletResponse myWallet() {
         return walletService.getWalletInfo(SecurityUtil.getCurrentUserEmail());
+    }
+
+    @GetMapping("/earnings/chart")
+    public java.util.List<java.util.Map<String, Object>> earningsChart(
+            @RequestParam(defaultValue = "30") int days) {
+        return walletService.getEarningsChart(SecurityUtil.getCurrentUserEmail(), days);
     }
 
     @PostMapping("/wallet/withdraw")
