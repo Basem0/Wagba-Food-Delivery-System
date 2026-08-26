@@ -239,7 +239,9 @@ async function loadAvailable() {
 async function loadMine() {
   try {
     showSkeletons('mineList', 4, 132);
-    const page = await api('/driver/deliveries?page=0&size=100');
+    const statusFilter = document.getElementById('drvDeliveryFilter') ? document.getElementById('drvDeliveryFilter').value : '';
+    const qs = statusFilter ? '?status=' + statusFilter : '';
+    const page = await api('/driver/deliveries' + qs + (qs ? '&' : '?') + 'page=0&size=100');
     const list = page.content || [];
     const el = document.getElementById('mineList');
     if (!list.length) { el.innerHTML = emptyState('bi-inbox', 'No deliveries yet', 'Accept an available delivery to get started.'); return; }
@@ -285,9 +287,21 @@ function toggleLiveLocation() {
 // ---------- Earnings / Wallet ----------
 async function loadDriverEarnings() {
   try {
-    const w = await api('/driver/wallet');
+    const [w, daily, weekly] = await Promise.all([
+      api('/driver/wallet'),
+      api('/driver/deliveries/earnings?period=daily').catch(() => ({ totalEarnings: 0, totalDeliveries: 0 })),
+      api('/driver/deliveries/earnings?period=weekly').catch(() => ({ totalEarnings: 0, totalDeliveries: 0 }))
+    ]);
     window._driverBalance = w.balance != null ? w.balance : 0;
     document.getElementById('driverWalletBalance').textContent = money(window._driverBalance);
+    const reportEl = document.getElementById('drvEarningsReport');
+    if (reportEl) {
+      reportEl.innerHTML = `
+        <div class="row g-3 mb-3">
+          <div class="col-6"><div class="stat-card blue"><div class="sc-ic"><i class="bi bi-calendar-day"></i></div><div class="sc-label">Today</div><div class="sc-val">${money(daily.totalEarnings)}</div><div class="sc-sub">${daily.totalDeliveries} deliveries</div></div></div>
+          <div class="col-6"><div class="stat-card green"><div class="sc-ic"><i class="bi bi-calendar-week"></i></div><div class="sc-label">This Week</div><div class="sc-val">${money(weekly.totalEarnings)}</div><div class="sc-sub">${weekly.totalDeliveries} deliveries</div></div></div>
+        </div>`;
+    }
     const txns = w.transactions || [];
     document.getElementById('driverWalletTxns').innerHTML = txns.length
       ? `<table class="table wagba"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th class="text-end">Amount</th></tr></thead><tbody>`

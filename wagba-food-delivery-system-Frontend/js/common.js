@@ -190,6 +190,7 @@ const BOTTOM_NAV = {
     { view: 'restaurants', label: 'Restaurants', icon: 'bi-shop' },
     { view: 'cart', label: 'Cart', icon: 'bi-cart3', badge: 'cartCount' },
     { view: 'orders', label: 'Orders', icon: 'bi-receipt' },
+    { view: 'favorites', label: 'Favorites', icon: 'bi-heart' },
     { view: 'coupons', label: 'Coupons', icon: 'bi-ticket-perforated' },
     { view: 'settings', label: 'User', icon: 'bi-person-circle' },
   ],

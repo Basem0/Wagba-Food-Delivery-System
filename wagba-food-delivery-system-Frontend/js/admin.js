@@ -35,24 +35,41 @@ function renderSettings() {
 
 async function renderOverview() {
   try {
-    const [rp, dp, up] = await Promise.all([
-      api('/admin/restaurants?page=0&size=100'), api('/admin/drivers?page=0&size=100'), api('/admin/users?page=0&size=100')
+    const [analytics, rp, dp] = await Promise.all([
+      api('/admin/analytics').catch(() => null),
+      api('/admin/restaurants?page=0&size=100'),
+      api('/admin/drivers?page=0&size=100')
     ]);
     const rests = rp.content || [];
     const drivers = dp.content || [];
-    const users = up.content || [];
     const pendR = rests.filter(r => (r.status || '') === 'PENDING').length;
     const pendD = drivers.filter(d => (d.status || '') === 'PENDING').length;
-    const owners = users.filter(u => u.role === 'RESTAURANT_OWNER').length;
-    const drv = users.filter(u => u.role === 'DRIVER').length;
-    const cust = users.filter(u => u.role === 'CUSTOMER').length;
-    const apprR = rests.filter(r => (r.status || '') === 'APPROVED').length;
-    const apprD = drivers.filter(d => (d.status || '') === 'APPROVED').length;
-    document.getElementById('ovStats').innerHTML =
-      statCard('bi-shop', 'Restaurants', rests.length, '', apprR + ' approved') +
-      statCard('bi-bicycle', 'Drivers', drivers.length, 'blue', apprD + ' approved') +
-      statCard('bi-people', 'Users', users.length, 'violet', `${cust} customers · ${drv} drivers · ${owners} owners`) +
-      statCard('bi-hourglass-split', 'Pending review', pendR + pendD, 'green', pendR + ' restaurants · ' + pendD + ' drivers');
+    if (analytics) {
+      document.getElementById('ovStats').innerHTML =
+        statCard('bi-shop', 'Restaurants', analytics.totalRestaurants, '', analytics.pendingRestaurants + ' pending') +
+        statCard('bi-bicycle', 'Drivers', analytics.totalDrivers, 'blue', analytics.pendingDrivers + ' pending') +
+        statCard('bi-people', 'Users', analytics.totalCustomers + analytics.totalDrivers + analytics.totalOwners, 'violet') +
+        statCard('bi-cash-stack', 'Revenue', analytics.totalRevenue, 'green', money(analytics.revenueToday) + ' today');
+      document.getElementById('ovOrders').innerHTML = `
+        <div class="row g-2">
+          <div class="col-4 text-center"><div class="h4 mb-0">${analytics.totalOrders}</div><div class="muted small">Total orders</div></div>
+          <div class="col-4 text-center"><div class="h4 mb-0">${analytics.ordersToday}</div><div class="muted small">Today</div></div>
+          <div class="col-4 text-center"><div class="h4 mb-0">${analytics.ordersThisWeek}</div><div class="muted small">This week</div></div>
+        </div>`;
+    } else {
+      const up = await api('/admin/users?page=0&size=100');
+      const users = up.content || [];
+      const owners = users.filter(u => u.role === 'RESTAURANT_OWNER').length;
+      const drv = users.filter(u => u.role === 'DRIVER').length;
+      const cust = users.filter(u => u.role === 'CUSTOMER').length;
+      const apprR = rests.filter(r => (r.status || '') === 'APPROVED').length;
+      const apprD = drivers.filter(d => (d.status || '') === 'APPROVED').length;
+      document.getElementById('ovStats').innerHTML =
+        statCard('bi-shop', 'Restaurants', rests.length, '', apprR + ' approved') +
+        statCard('bi-bicycle', 'Drivers', drivers.length, 'blue', apprD + ' approved') +
+        statCard('bi-people', 'Users', users.length, 'violet', `${cust} customers · ${drv} drivers · ${owners} owners`) +
+        statCard('bi-hourglass-split', 'Pending review', pendR + pendD, 'green', pendR + ' restaurants · ' + pendD + ' drivers');
+    }
 
     const pendRest = rests.filter(r => (r.status || '') === 'PENDING').slice(0, 4);
     document.getElementById('ovRest').innerHTML = pendRest.length
@@ -139,6 +156,7 @@ async function loadDrivers() {
         </div>
         <div class="ec-actions">
           ${(d.status || '') === 'PENDING' ? `<button class="btn btn-sm btn-success" onclick="approveDriver(${d.id})"><i class="bi bi-check-lg"></i> Approve</button><button class="btn btn-sm btn-danger" onclick="rejectDriver(${d.id})"><i class="bi bi-x-lg"></i> Reject</button>` : `
+            <button class="btn btn-sm btn-outline-primary" onclick="showDriverPerformance(${d.id})"><i class="bi bi-graph-up"></i> Performance</button>
             <button class="btn btn-sm btn-outline-warning" onclick="suspendUser(${d.id})">Suspend</button>
             <button class="btn btn-sm btn-outline-success" onclick="activateUser(${d.id})">Activate</button>
             <button class="btn btn-sm btn-outline-dark" onclick="banDriver(${d.id})">Ban</button>
@@ -228,6 +246,26 @@ async function activateUser(id) { try { await api('/admin/users/' + id + '/activ
 async function deleteUser(id) { if (!confirm('Delete user #' + id + '? This cannot be undone.')) return; try { await api('/admin/users/' + id, 'DELETE'); toast('Deleted', 'User #' + id); loadDrivers(); loadUsers(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
 async function banDriver(id) { try { await api('/admin/drivers/' + id + '/ban', 'POST'); toast('Banned', 'Driver #' + id); loadDrivers(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
 async function unbanDriver(id) { try { await api('/admin/drivers/' + id + '/unban', 'POST'); toast('Unbanned', 'Driver #' + id); loadDrivers(); renderOverview(); } catch (e) { showAlert('alertBox', 'danger', e.message); } }
+
+// ---------- Driver Performance ----------
+async function showDriverPerformance(id) {
+  try {
+    const p = await api('/admin/drivers/' + id + '/performance');
+    const perfEl = document.getElementById('drvPerf');
+    if (perfEl) {
+      perfEl.innerHTML = `
+        <div class="card mb-3"><div class="card-body">
+          <h5><i class="bi bi-graph-up"></i> ${escapeHtml(p.name)} — Performance</h5>
+          <div class="row g-3 mt-2">
+            <div class="col-4 text-center"><div class="h4 mb-0">${p.totalDeliveries}</div><div class="muted small">Deliveries</div></div>
+            <div class="col-4 text-center"><div class="h4 mb-0">${money(p.totalEarnings)}</div><div class="muted small">Earnings</div></div>
+            <div class="col-4 text-center"><div class="h4 mb-0">${p.avgRating != null ? p.avgRating + ' ⭐' : '—'}</div><div class="muted small">${p.reviewCount || 0} reviews</div></div>
+          </div>
+        </div></div>`;
+      new bootstrap.Modal(document.getElementById('drvPerfModal')).show();
+    }
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
 
 // ---------- Coupons ----------
 async function createCoupon() {

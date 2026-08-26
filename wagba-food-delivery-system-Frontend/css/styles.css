@@ -1294,3 +1294,25 @@ a { text-decoration: none; color: inherit; }
   .set-cat i { font-size: .95rem; }
   .settings-body { padding: 0 2px; }
 }
+
+/* Chart bars */
+.chart-container { overflow-x: auto; padding-bottom: 20px; }
+.chart-bar {
+  flex: 1;
+  min-width: 12px;
+  max-width: 30px;
+  background: var(--gradient);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: height .3s ease;
+}
+.chart-bar:hover { opacity: .85; }
+.chart-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .6rem;
+  color: var(--muted);
+  white-space: nowrap;
+}

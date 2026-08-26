@@ -50,6 +50,7 @@ function init() {
     restaurants: { title: 'Restaurants', sub: 'Discover kitchens near you' },
     cart: { title: 'My Cart', sub: 'Review and checkout your items' },
     orders: { title: 'My Orders', sub: 'Track and manage your orders' },
+    favorites: { title: 'Favorites', sub: 'Your favorite restaurants' },
     coupons: { title: 'My Coupons', sub: 'Your saved offers' },
     settings: { title: 'Settings', sub: 'Manage your account' }
   };
@@ -66,7 +67,7 @@ function init() {
   if (spN) spN.textContent = me.name || me.email || 'Customer';
   if (spE) spE.textContent = me.email || '';
   if (spA) spA.textContent = (me.name || me.email || 'C').trim().charAt(0).toUpperCase();
-  window.onNav = (v) => { if (v === 'cart') loadCart(); if (v === 'orders') loadOrders(); if (v === 'coupons') loadCoupons(); if (v === 'settings') renderSettings(); };
+  window.onNav = (v) => { if (v === 'cart') loadCart(); if (v === 'orders') loadOrders(); if (v === 'favorites') loadFavorites(); if (v === 'coupons') loadCoupons(); if (v === 'settings') renderSettings(); };
   window.__realtimeRefresh = () => { loadOrders(); loadCart(); };
   navTo('restaurants');
   loadRestaurants();
@@ -170,9 +171,13 @@ async function saveAddress() {
 async function loadRestaurants() {
   try {
     showSkeletons('restaurantList', 8, 232);
-    const page = await api('/restaurants?page=0&size=100');
+    const [page, favs] = await Promise.all([
+      api('/restaurants?page=0&size=100'),
+      api('/favorites').catch(() => [])
+    ]);
     const list = page.content || [];
     window._rests = list || [];
+    window._favIds = new Set((favs || []).map(f => f.restaurantId));
     const cuis = [...new Set((list || []).map(r => r.cuisine).filter(Boolean))];
     const cuMenu = document.getElementById('cuisineMenu');
     if (cuMenu) cuMenu.innerHTML = ['', ...cuis].map(c =>
@@ -229,7 +234,10 @@ function renderRestaurants(list) {
             ${r.minOrderTotal ? `<span><i class="bi bi-bag"></i> Min. ${money(r.minOrderTotal)}</span>` : ''}
           </div>
         </div>
-        <button type="button" class="rc-view" onclick="viewRestaurant(${r.id}); event.stopPropagation();" aria-label="View Restaurant"><i class="bi bi-arrow-right"></i></button>
+        <div class="d-flex flex-column gap-1" style="align-self:center">
+          <button type="button" class="btn btn-sm ${(window._favIds && window._favIds.has(r.id)) ? 'btn-outline-danger' : 'btn-outline-secondary'}" onclick="event.stopPropagation(); toggleFavorite(${r.id})" title="Toggle favorite"><i class="bi bi-heart${(window._favIds && window._favIds.has(r.id)) ? '-fill' : ''}"></i></button>
+          <button type="button" class="rc-view" onclick="viewRestaurant(${r.id}); event.stopPropagation();" aria-label="View Restaurant"><i class="bi bi-arrow-right"></i></button>
+        </div>
       </div>`;
     }).join('');
 }
@@ -598,6 +606,7 @@ async function loadOrders() {
           <div class="oc-total">${money(o.totalPrice)}${o.discountAmount ? `<span class="save">saved ${money(o.discountAmount)}${o.couponCode ? ' · ' + escapeHtml(o.couponCode) : ''}</span>` : ''}</div>
           <div class="d-flex gap-2">
             ${o.status === 'DELIVERED' && o.reviewed ? `<span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle"></i> Reviewed</span>` : ''}
+            ${(o.status === 'DELIVERED' || o.status === 'CANCELLED') ? `<button class="btn btn-sm btn-soft" onclick="event.stopPropagation(); reorder(${o.id})"><i class="bi bi-arrow-repeat"></i> Reorder</button>` : ''}
             ${(o.status !== 'DELIVERED' && o.status !== 'CANCELLED' && o.status !== 'REJECTED') ? `<button class="btn btn-sm btn-brand" onclick="event.stopPropagation(); trackOrder(${o.id})"><i class="bi bi-geo-alt"></i> Track</button>` : ''}
           </div>
         </div>
@@ -857,6 +866,45 @@ function renderCouponList() {
   }).join('');
 }
 
+
+// ---------- Reorder ----------
+async function reorder(orderId) {
+  try {
+    await api('/orders/' + orderId + '/reorder', 'POST');
+    toast('Added to cart', 'Previous order items added');
+    loadCart();
+    navTo('cart');
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+
+// ---------- Favorites ----------
+async function loadFavorites() {
+  try {
+    showSkeletons('favList', 4, 150);
+    const list = await api('/favorites');
+    const el = document.getElementById('favList');
+    if (!list.length) { el.innerHTML = emptyState('bi-heart', 'No favorites yet', 'Tap the heart on any restaurant to save it here.'); return; }
+    el.innerHTML = list.map(f => `
+      <div class="card rest-card mb-3 fade-in" style="cursor:pointer" onclick="viewRestaurant(${f.restaurantId})">
+        <div class="card-body d-flex align-center gap-3">
+          <div class="rest-logo"><i class="bi bi-shop"></i></div>
+          <div style="flex:1;min-width:0">
+            <div class="rest-name">${escapeHtml(f.restaurantName)}</div>
+            <div class="rest-meta">${f.cuisine ? `<span class="badge bg-light text-dark">${escapeHtml(f.cuisine)}</span>` : ''} ${f.avgRating != null ? `<span class="text-warning"><i class="bi bi-star-fill"></i> ${f.avgRating}</span>` : ''}</div>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); toggleFavorite(${f.restaurantId})"><i class="bi bi-heart-fill"></i></button>
+        </div>
+      </div>`).join('');
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+async function toggleFavorite(restaurantId) {
+  try {
+    const res = await api('/favorites/' + restaurantId, 'POST');
+    if (res.favorited) toast('Added', 'Added to favorites');
+    else toast('Removed', 'Removed from favorites');
+    if (document.getElementById('view-favorites') && !document.getElementById('view-favorites').classList.contains('d-none')) loadFavorites();
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
 
 // ---------- Live Tracking ----------
 let trackTimer = null, trackMap = null, trackMarker = null, trackCustMarker = null, trackRestMarker = null;

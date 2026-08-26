@@ -265,7 +265,9 @@ async function loadFoods() {
         <div class="body">
           <div class="d-flex justify-between align-center gap-2">
             <div class="name text-truncate">${escapeHtml(f.name)}</div>
-            ${avail}
+            <button class="btn btn-sm ${f.available === false ? 'btn-outline-secondary' : 'btn-outline-success'}" onclick="toggleFoodAvail(${f.id})" title="${f.available === false ? 'Enable' : 'Disable'}">
+              <i class="bi bi-${f.available === false ? 'slash-circle' : 'check-circle'}"></i>
+            </button>
           </div>
           <div class="desc">${escapeHtml(f.categoryName || 'Uncategorized')}</div>
           <div class="row">
@@ -308,6 +310,13 @@ async function saveFood() {
 async function deleteFood(id) {
   try { await api('/restaurant-owner/foods/' + id, 'DELETE'); toast('Deleted', 'Food removed'); loadFoods(); }
   catch (e) { showAlert('alertBox', 'danger', e.message); }
+}
+async function toggleFoodAvail(id) {
+  try {
+    const res = await api('/restaurant-owner/foods/' + id + '/availability', 'PUT');
+    toast('Updated', res.name + ' is now ' + (res.available ? 'available' : 'unavailable'));
+    loadFoods();
+  } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
 // ---------- Restaurant profile (location map, used inside Settings) ----------
@@ -359,9 +368,20 @@ async function searchRestaurantAddress() {
 // ---------- Earnings / Wallet ----------
 async function loadEarnings() {
   try {
-    const w = await api('/restaurant-owner/wallet');
+    const [w, chart] = await Promise.all([
+      api('/restaurant-owner/wallet'),
+      api('/restaurant-owner/earnings/chart?days=30').catch(() => [])
+    ]);
     window._ownerBalance = w.balance != null ? w.balance : 0;
     document.getElementById('walletBalance').textContent = money(window._ownerBalance);
+    const chartEl = document.getElementById('earningsChart');
+    if (chartEl && chart.length) {
+      const maxAmt = Math.max(...chart.map(c => c.amount), 1);
+      chartEl.innerHTML = chart.map(c => {
+        const pct = Math.round((c.amount / maxAmt) * 100);
+        return `<div class="chart-bar" style="height:${Math.max(pct, 2)}%" title="${c.date}: ${money(c.amount)}"><span class="chart-label">${c.date.slice(5)}</span></div>`;
+      }).join('');
+    }
     const txns = w.transactions || [];
     document.getElementById('walletTxns').innerHTML = txns.length
       ? `<table class="table wagba"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th class="text-end">Amount</th></tr></thead><tbody>`
