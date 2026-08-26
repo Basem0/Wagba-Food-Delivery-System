@@ -464,6 +464,51 @@ a { text-decoration: none; color: inherit; }
 .empty-state .et { font-family: var(--display); font-weight: 600; font-size: 1.05rem; color: var(--ink); margin-top: 14px; }
 .empty-state .es { font-size: .9rem; margin-top: 2px; }
 
+/* ---------- Favorites ---------- */
+.favorites-hero {
+  display: flex; align-items: center; gap: 16px; padding: 20px 22px; margin-bottom: 20px;
+  border: 1px solid color-mix(in srgb, var(--brand) 20%, var(--line)); border-radius: var(--radius);
+  background: linear-gradient(115deg, #fff 0%, var(--brand-soft) 100%); box-shadow: var(--shadow-sm);
+}
+.favorites-hero-icon {
+  width: 52px; height: 52px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 16px;
+  color: #fff; background: linear-gradient(135deg, #fb7185, var(--danger)); box-shadow: 0 10px 22px rgba(226,55,68,.22); font-size: 1.3rem;
+}
+.favorites-kicker { display: block; margin-bottom: 2px; color: var(--brand-dark); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.favorites-hero h2 { margin: 0; font-size: 1.25rem; }
+.favorites-hero p { margin: 2px 0 0; color: var(--muted); font-size: .86rem; }
+.favorites-count { margin-left: auto; white-space: nowrap; border: 1px solid color-mix(in srgb, var(--brand) 22%, transparent); border-radius: 999px; background: rgba(255,255,255,.78); color: var(--brand-dark); padding: 6px 10px; font-size: .78rem; font-weight: 700; }
+.favorites-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.favorite-card {
+  overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow-sm); cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.favorite-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--brand) 32%, var(--line)); box-shadow: var(--shadow); }
+.favorite-card-cover { position: relative; height: 145px; display: grid; place-items: center; overflow: hidden; background: var(--gradient); color: #fff; font-size: 2.25rem; }
+.favorite-card-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(24,24,27,.18)); pointer-events: none; }
+.favorite-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+.favorite-heart { position: absolute; z-index: 1; top: 12px; right: 12px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: rgba(255,255,255,.92); color: var(--danger); box-shadow: 0 4px 12px rgba(24,24,27,.16); font-size: .95rem; }
+.favorite-card-body { display: flex; align-items: center; gap: 12px; padding: 15px; }
+.favorite-card-main { min-width: 0; flex: 1; }
+.favorite-card-main h3 { overflow: hidden; margin: 0 0 7px; color: var(--ink); font-size: 1rem; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+.favorite-card-meta { display: flex; align-items: center; gap: 8px; min-height: 22px; }
+.favorite-cuisine { overflow: hidden; max-width: 132px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-dark); padding: 3px 8px; font-size: .7rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.favorite-rating { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); font-size: .78rem; font-weight: 700; }
+.favorite-rating i { color: var(--accent); }
+.favorite-remove { display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 10px; background: var(--danger-soft); color: var(--danger); padding: 8px 9px; font-size: .76rem; font-weight: 700; cursor: pointer; transition: background .15s, transform .15s; }
+.favorite-remove:hover { background: var(--danger); color: #fff; transform: translateY(-1px); }
+.favorites-empty { border: 1px dashed color-mix(in srgb, var(--brand) 32%, var(--line)); border-radius: var(--radius); background: rgba(255,255,255,.7); }
+
+@media (max-width: 600px) {
+  .favorites-hero { align-items: flex-start; flex-wrap: wrap; gap: 12px; padding: 17px; }
+  .favorites-hero-icon { width: 46px; height: 46px; border-radius: 14px; }
+  .favorites-hero h2 { font-size: 1.08rem; }
+  .favorites-hero p { font-size: .8rem; }
+  .favorites-count { width: 100%; margin-left: 0; text-align: center; }
+  .favorites-grid { grid-template-columns: 1fr; }
+  .favorite-card-cover { height: 170px; }
+}
+
 /* ---------- Timeline ---------- */
 .timeline { display: flex; justify-content: space-between; gap: 8px; }
 .timeline .step { flex: 1; text-align: center; position: relative; }

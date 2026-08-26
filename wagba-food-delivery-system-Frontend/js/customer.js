@@ -883,23 +883,53 @@ async function loadFavorites() {
     showSkeletons('favList', 4, 150);
     const list = await api('/favorites');
     const el = document.getElementById('favList');
-    if (!list.length) { el.innerHTML = emptyState('bi-heart', 'No favorites yet', 'Tap the heart on any restaurant to save it here.'); return; }
-    el.innerHTML = list.map(f => `
-      <div class="card rest-card mb-3 fade-in" style="cursor:pointer" onclick="viewRestaurant(${f.restaurantId})">
-        <div class="card-body d-flex align-center gap-3">
-          <div class="rest-logo"><i class="bi bi-shop"></i></div>
-          <div style="flex:1;min-width:0">
-            <div class="rest-name">${escapeHtml(f.restaurantName)}</div>
-            <div class="rest-meta">${f.cuisine ? `<span class="badge bg-light text-dark">${escapeHtml(f.cuisine)}</span>` : ''} ${f.avgRating != null ? `<span class="text-warning"><i class="bi bi-star-fill"></i> ${f.avgRating}</span>` : ''}</div>
-          </div>
-          <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); toggleFavorite(${f.restaurantId})"><i class="bi bi-heart-fill"></i></button>
+    const countLabel = list.length === 1 ? '1 restaurant saved' : `${list.length} restaurants saved`;
+    const header = `
+      <div class="favorites-hero">
+        <div class="favorites-hero-icon"><i class="bi bi-heart-fill"></i></div>
+        <div>
+          <span class="favorites-kicker">Your collection</span>
+          <h2>Favorite restaurants</h2>
+          <p>Keep your go-to places close and order again whenever you like.</p>
         </div>
-      </div>`).join('');
+        <span class="favorites-count">${countLabel}</span>
+      </div>`;
+
+    if (!list.length) {
+      el.innerHTML = `${header}<div class="favorites-empty">${emptyState('bi-heart', 'No favorites yet', 'Tap the heart on any restaurant to save it here.')}</div>`;
+      return;
+    }
+
+    el.innerHTML = `${header}<div class="favorites-grid">${list.map(f => {
+      const rating = f.avgRating != null ? Number(f.avgRating).toFixed(1) : null;
+      return `
+        <article class="favorite-card fade-in" onclick="viewRestaurant(${f.restaurantId})">
+          <div class="favorite-card-cover">
+            ${f.imageUrl ? `<img src="${escapeHtml(f.imageUrl)}" alt="${escapeHtml(f.restaurantName)}" onerror="onImgError(this)" data-label="${escapeHtml(f.restaurantName)}">` : '<i class="bi bi-shop"></i>'}
+            <span class="favorite-heart" aria-hidden="true"><i class="bi bi-heart-fill"></i></span>
+          </div>
+          <div class="favorite-card-body">
+            <div class="favorite-card-main">
+              <h3>${escapeHtml(f.restaurantName)}</h3>
+              <div class="favorite-card-meta">
+                ${f.cuisine ? `<span class="favorite-cuisine">${escapeHtml(f.cuisine)}</span>` : ''}
+                ${rating ? `<span class="favorite-rating"><i class="bi bi-star-fill"></i> ${rating}</span>` : ''}
+              </div>
+            </div>
+            <button type="button" class="favorite-remove" onclick="event.stopPropagation(); toggleFavorite(${f.restaurantId})" aria-label="Remove ${escapeHtml(f.restaurantName)} from favorites" title="Remove from favorites">
+              <i class="bi bi-heartbreak"></i><span>Remove</span>
+            </button>
+          </div>
+        </article>`;
+    }).join('')}</div>`;
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 async function toggleFavorite(restaurantId) {
   try {
     const res = await api('/favorites/' + restaurantId, 'POST');
+    if (!window._favIds) window._favIds = new Set();
+    if (res.favorited) window._favIds.add(restaurantId); else window._favIds.delete(restaurantId);
+    if (window._rests) renderRestaurants(window._rests);
     if (res.favorited) toast('Added', 'Added to favorites');
     else toast('Removed', 'Removed from favorites');
     if (document.getElementById('view-favorites') && !document.getElementById('view-favorites').classList.contains('d-none')) loadFavorites();
