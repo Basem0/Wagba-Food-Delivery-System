@@ -2,6 +2,15 @@
 
 Wagba is a full-stack food-delivery platform that connects **customers**, **restaurant owners**, **drivers**, and **administrators** in one delivery lifecycle. From discovering a restaurant to payment, preparation, delivery, earnings, and reviews, each user works through a dedicated role-based experience.
 
+
+
+
+[Uploading Screencast from 2026-08-26 21-37-26.webm…]()
+
+
+
+
+
 > **Want the detailed technical view?** Read the complete [System Design](system-design.md) for requirements, data model, service boundaries, order lifecycle, and API design.
 
 ## The idea
