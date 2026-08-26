@@ -175,18 +175,6 @@ async function submitProfile() {
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
 
-function openEditRestaurant() {
-  clearAlert('restInfoAlert');
-  const r = window._rest || {};
-  document.getElementById('riName').value = r.name || '';
-  document.getElementById('riDesc').value = r.description || '';
-  document.getElementById('riImg').value = r.imageUrl || '';
-  document.getElementById('riCuisine').value = r.cuisine || '';
-  document.getElementById('riEta').value = r.etaMinutes != null ? r.etaMinutes : '';
-  document.getElementById('riFee').value = r.deliveryFee != null ? r.deliveryFee : '';
-  document.getElementById('riMin').value = r.minOrderTotal != null ? r.minOrderTotal : '';
-  new bootstrap.Modal(document.getElementById('restInfoModal')).show();
-}
 async function saveRestaurantInfo() {
   clearAlert('restInfoAlert');
   const body = {
@@ -227,9 +215,7 @@ async function renderDashboard(r) {
       : emptyState('bi-receipt', 'No orders yet', 'Orders will appear here once customers start ordering.');
   } catch (e) { /* ignore */ }
 }
-function statCard(icon, label, val, cls) {
-  return `<div class="col-6 col-lg-3"><div class="stat-card ${cls}"><div class="ic"><i class="bi bi-${icon}"></i></div><div class="label">${label}</div><div class="val">${val}</div></div></div>`;
-}
+
 
 // ---------- Categories ----------
 function loadCategories() {
@@ -465,6 +451,4 @@ async function setStatus(id, status) {
   try { await api('/restaurant-owner/orders/' + id + '/status?status=' + status, 'PUT'); toast('Updated', 'Order #' + id + ' → ' + status); loadOrders(); }
   catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
-function emptyState(icon, title, sub) {
-  return `<div class="empty-state"><div class="ico"><i class="bi bi-${icon}"></i></div><div class="fw-semibold">${escapeHtml(title)}</div><div class="small">${escapeHtml(sub || '')}</div></div>`;
-}
+

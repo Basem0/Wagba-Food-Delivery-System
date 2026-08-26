@@ -7,7 +7,6 @@ const DEFAULT_API = 'http://localhost:8082/api/v1';
 
 // The API base is now fixed (unified) and can no longer be changed from the UI.
 function getApiBase() { return DEFAULT_API; }
-function setApiBase() { /* API base is fixed and unified across the app */ }
 
 // ---------- auth storage ----------
 function getToken() { return localStorage.getItem('wagba_token'); }
@@ -539,17 +538,8 @@ function showSkeletons(containerId, count, height) {
   for (let i = 0; i < count; i++) html += `<div class="skeleton" style="height:${height}px;border-radius:var(--radius)"></div>`;
   el.innerHTML = html;
 }
-function skeletonRows(containerId, cols, rows) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  rows = rows || 5;
-  let html = '';
-  for (let r = 0; r < rows; r++) {
-    html += '<tr>';
-    for (let c = 0; c < cols; c++) html += '<td><div class="skeleton" style="height:14px"></div></td>';
-    html += '</tr>';
-  }
-  el.innerHTML = html;
+function statCard(icon, label, val, cls, sub) {
+  return `<div class="col-6 col-lg-3"><div class="stat-card ${cls}"><div class="ic"><i class="bi bi-${icon}"></i></div><div class="label">${label}</div><div class="val">${val}</div>${sub ? `<div class="sub">${escapeHtml(sub)}</div>` : ''}</div></div>`;
 }
 function emptyState(icon, title, sub, actionHtml) {
   return `<div class="empty-state"><div class="ico"><i class="bi ${icon}"></i></div><div class="et">${escapeHtml(title)}</div><div class="es">${escapeHtml(sub || '')}</div>${actionHtml || ''}</div>`;

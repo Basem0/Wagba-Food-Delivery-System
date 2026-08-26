@@ -64,9 +64,6 @@ async function renderOverview() {
       : '<p class="muted small mb-0">All caught up. 🎉</p>';
   } catch (e) { showAlert('alertBox', 'danger', e.message); }
 }
-function statCard(icon, label, val, cls, sub) {
-  return `<div class="col-6 col-lg-3"><div class="stat-card ${cls}"><div class="ic"><i class="bi bi-${icon}"></i></div><div class="label">${label}</div><div class="val">${val}</div>${sub ? `<div class="sub">${escapeHtml(sub)}</div>` : ''}</div></div>`;
-}
 function roleBadge(role) {
   const map = { CUSTOMER: 'customer', RESTAURANT_OWNER: 'owner', DRIVER: 'driver', ADMIN: 'admin' };
   return `<span class="role-badge role-${map[role] || 'admin'}">${escapeHtml(role)}</span>`;
@@ -85,7 +82,7 @@ async function loadRestaurants() {
     const page = await api('/admin/restaurants?' + qs.toString());
     const list = page.content || [];
     const el = document.getElementById('restList');
-    if (!list.length) { el.innerHTML = emptyState('bi-shop', 'Nothing here', 'No restaurants for this filter.'); return; }
+    if (!list.length) { el.innerHTML = '<div class="col-12">' + emptyState('bi-shop', 'Nothing here', 'No restaurants for this filter.') + '</div>'; return; }
     el.innerHTML = list.map(r => `
       <div class="col-12 col-md-6"><div class="entity-card">
         <div class="ec-head">
@@ -116,7 +113,7 @@ async function rejectRestaurant(id) { try { await api('/admin/restaurants/' + id
 // ---------- Drivers ----------
 async function loadDrivers() {
   try {
-    showSkeletons('drvList', 6, 150);
+    showSkeletons('driverList', 6, 150);
     const status = document.getElementById('drvFilter').value;
     const search = document.getElementById('drvSearch') ? document.getElementById('drvSearch').value.trim() : '';
     const qs = new URLSearchParams();
@@ -126,7 +123,7 @@ async function loadDrivers() {
     const page = await api('/admin/drivers?' + qs.toString());
     const list = page.content || [];
     const el = document.getElementById('driverList');
-    if (!list.length) { el.innerHTML = emptyState('bi-bicycle', 'Nothing here', 'No drivers for this filter.'); return; }
+    if (!list.length) { el.innerHTML = '<div class="col-12">' + emptyState('bi-bicycle', 'Nothing here', 'No drivers for this filter.') + '</div>'; return; }
     el.innerHTML = list.map(d => `
       <div class="col-12 col-md-6"><div class="entity-card">
         <div class="ec-head">
@@ -270,6 +267,3 @@ async function loadAdminCoupons() {
   } catch (e) { showAlert('couponAlert', 'danger', e.message); }
 }
 
-function emptyState(icon, title, sub) {
-  return `<div class="col-12"><div class="empty-state"><div class="ico"><i class="bi bi-${icon}"></i></div><div class="fw-semibold">${escapeHtml(title)}</div><div class="small">${escapeHtml(sub || '')}</div></div></div>`;
-}

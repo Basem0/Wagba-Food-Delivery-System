@@ -127,9 +127,7 @@ async function renderDashboard() {
     }
   } catch (e) {}
 }
-function statCard(icon, label, val, cls) {
-  return `<div class="col-6 col-lg-3"><div class="stat-card ${cls}"><div class="ic"><i class="bi bi-${icon}"></i></div><div class="label">${label}</div><div class="val">${val}</div></div></div>`;
-}
+
 
 function deliveryCard(d, withActions, locked) {
   let actions = '';
@@ -318,6 +316,3 @@ async function withdrawEarnings() {
   } catch (e) { showAlert('withdrawAlert', 'danger', e.message); }
 }
 
-function emptyState(icon, title, sub) {
-  return `<div class="col-12"><div class="empty-state"><div class="ico"><i class="bi bi-${icon}"></i></div><div class="fw-semibold">${escapeHtml(title)}</div><div class="small">${escapeHtml(sub || '')}</div></div></div>`;
-}

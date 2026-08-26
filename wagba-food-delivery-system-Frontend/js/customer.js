@@ -954,9 +954,6 @@ function buildTimeline(orderStatus, deliveryStatus) {
     <div class="step ${s.done ? 'done' : ''}"><div class="dot"><i class="bi bi-${s.icon}"></i></div><div class="lbl">${s.label}</div></div>`).join('') + '</div>';
 }
 
-function emptyState(icon, title, sub) {
-  return `<div class="empty-state"><div class="ico"><i class="bi bi-${icon}"></i></div><div class="fw-semibold">${escapeHtml(title)}</div><div class="small">${escapeHtml(sub || '')}</div></div>`;
-}
 
 // Kick off after all declarations are initialized
 boot('CUSTOMER', init);
