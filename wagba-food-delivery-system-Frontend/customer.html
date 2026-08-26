@@ -208,9 +208,12 @@
 
   <!-- Order detail + reviews modal -->
   <div class="modal fade" id="orderDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable order-detail-dialog">
       <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Order details</h5><button class="icon-btn" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button></div>
+        <div class="modal-header">
+          <div class="od-modal-title"><span><i class="bi bi-receipt-cutoff"></i></span><div><h5 class="modal-title">Order details</h5><small>Items, delivery, and payment summary</small></div></div>
+          <button class="icon-btn" data-bs-dismiss="modal" aria-label="Close order details"><i class="bi bi-x-lg"></i></button>
+        </div>
         <div class="modal-body" id="orderDetailBody"></div>
       </div>
     </div>

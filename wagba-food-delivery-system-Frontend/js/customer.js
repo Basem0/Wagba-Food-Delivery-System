@@ -772,21 +772,39 @@ function renderOrderDetail(o, reviews) {
        </div>`
     : `<div class="od-section text-muted small">Reviews are available after the order is delivered.</div>`;
   document.getElementById('orderDetailBody').innerHTML = `
-    <div class="od-head">
-      <div><div class="oc-title">Order #${o.id}</div>
-        <div class="oc-sub">${escapeHtml(o.restaurantName || 'Restaurant')} · ${fmtDateTime(o.createdAt)}</div></div>
-      <div class="oc-badges">${statusBadge(o.status)} ${o.deliveryStatus ? statusBadge(o.deliveryStatus) : ''}</div>
-    </div>
-    <div class="od-section"><h6>Items</h6>${itemsHtml}</div>
-    <div class="od-section od-totals">
-      <div class="row"><span>Subtotal</span><span>${money(o.subtotal)}</span></div>
-      <div class="row"><span>Delivery fee</span><span>${money(o.deliveryFee)}</span></div>
-      ${o.discountAmount ? `<div class="row save"><span>Discount${o.couponCode ? ' (' + escapeHtml(o.couponCode) + ')' : ''}</span><span>-${money(o.discountAmount)}</span></div>` : ''}
-      <div class="row total"><span>Total</span><span>${money(o.totalPrice)}</span></div>
-      <div class="row"><span>Payment</span><span>${escapeHtml(o.paymentMethod || '')}${o.paid ? ' · paid' : ''}</span></div>
-    </div>
-    ${o.deliveryAddress ? `<div class="od-section"><h6>Delivery address</h6><div class="text-muted">${escapeHtml(formatAddr(o.deliveryAddress))}</div></div>` : ''}
-    ${reviewsHtml}`;
+    <div class="od-shell">
+      <section class="od-hero">
+        <div class="od-hero-icon"><i class="bi bi-bag-check"></i></div>
+        <div class="od-hero-copy">
+          <span class="od-eyebrow">Order #${o.id}</span>
+          <h2>${escapeHtml(o.restaurantName || 'Restaurant')}</h2>
+          <p><i class="bi bi-calendar3"></i> ${fmtDateTime(o.createdAt)}</p>
+        </div>
+        <div class="od-statuses">${statusBadge(o.status)} ${o.deliveryStatus ? statusBadge(o.deliveryStatus) : ''}</div>
+      </section>
+      <div class="od-layout">
+        <main class="od-primary">
+          <section class="od-section od-items-section">
+            <div class="od-section-heading"><span class="od-section-icon"><i class="bi bi-bag"></i></span><div><h6>Order items</h6><p>${o.items.length} item${o.items.length === 1 ? '' : 's'} in this order</p></div></div>
+            <div class="od-items">${itemsHtml}</div>
+          </section>
+          ${o.deliveryAddress ? `<section class="od-section od-address-section"><div class="od-section-heading"><span class="od-section-icon"><i class="bi bi-geo-alt"></i></span><div><h6>Delivery address</h6><p>${escapeHtml(formatAddr(o.deliveryAddress))}</p></div></div></section>` : ''}
+          <section class="od-reviews">${reviewsHtml}</section>
+        </main>
+        <aside class="od-aside">
+          <section class="od-summary-card">
+            <div class="od-summary-title"><i class="bi bi-receipt"></i><span>Payment summary</span></div>
+            <div class="od-totals">
+              <div class="row"><span>Subtotal</span><span>${money(o.subtotal)}</span></div>
+              <div class="row"><span>Delivery fee</span><span>${money(o.deliveryFee)}</span></div>
+              ${o.discountAmount ? `<div class="row save"><span>Discount${o.couponCode ? ' · ' + escapeHtml(o.couponCode) : ''}</span><span>-${money(o.discountAmount)}</span></div>` : ''}
+              <div class="row total"><span>Total</span><span>${money(o.totalPrice)}</span></div>
+            </div>
+            <div class="od-payment"><span><i class="bi bi-credit-card-2-front"></i> ${escapeHtml(o.paymentMethod || 'Payment')}</span><b class="${o.paid ? 'is-paid' : ''}">${o.paid ? 'Paid' : 'Pending'}</b></div>
+          </section>
+        </aside>
+      </div>
+    </div>`;
 }
 async function submitDetailReview(orderId, type, targetId, ratingId, commentId) {
   const rating = parseInt(document.getElementById(ratingId).value) || 0;
