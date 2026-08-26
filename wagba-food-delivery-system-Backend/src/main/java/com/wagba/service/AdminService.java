@@ -1,17 +1,27 @@
 package com.wagba.service;
 
+import com.wagba.dto.PageResponse;
 import com.wagba.dto.restaurant.RestaurantUpdateRequest;
+import com.wagba.entity.Driver;
 import com.wagba.entity.Restaurant;
 import com.wagba.entity.User;
 import com.wagba.entity.enums.RestaurantStatus;
 import com.wagba.entity.enums.UserRole;
 import com.wagba.entity.enums.UserStatus;
 import com.wagba.repository.DriverRepository;
+import com.wagba.repository.FoodRepository;
 import com.wagba.repository.OrderRepository;
 import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminService {
@@ -20,15 +30,103 @@ public class AdminService {
     private final DriverRepository driverRepository;
     private final RestaurantRepository restaurantRepository;
     private final OrderRepository orderRepository;
+    private final FoodRepository foodRepository;
 
     public AdminService(UserRepository userRepository,
                         DriverRepository driverRepository,
                         RestaurantRepository restaurantRepository,
-                        OrderRepository orderRepository) {
+                        OrderRepository orderRepository,
+                        FoodRepository foodRepository) {
         this.userRepository = userRepository;
         this.driverRepository = driverRepository;
         this.restaurantRepository = restaurantRepository;
         this.orderRepository = orderRepository;
+        this.foodRepository = foodRepository;
+    }
+
+    // ---------- List / query methods ----------
+
+    public PageResponse<Map<String, Object>> listRestaurants(RestaurantStatus status, String search, Pageable pg) {
+        Page<Restaurant> p = (search != null && !search.isBlank())
+                ? restaurantRepository.adminSearch(status, search.toLowerCase(), pg)
+                : (status != null ? restaurantRepository.findByStatus(status, pg) : restaurantRepository.findAll(pg));
+        var content = p.getContent().stream().map(r -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", r.getId());
+            m.put("name", r.getName());
+            m.put("status", r.getStatus().name());
+            m.put("ownerEmail", r.getOwner() != null ? r.getOwner().getEmail() : null);
+            m.put("cuisine", r.getCuisine());
+            m.put("description", r.getDescription());
+            m.put("avgRating", r.getAvgRating());
+            m.put("phone", r.getPhone());
+            m.put("hasOffers", foodRepository.existsByCategoryRestaurantAndDiscountPriceIsNotNull(r));
+            return m;
+        }).collect(Collectors.toList());
+        return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
+    }
+
+    public PageResponse<Map<String, Object>> listDrivers(UserStatus status, String search, Pageable pg) {
+        Page<User> p;
+        if (search != null && !search.isBlank()) {
+            p = userRepository.searchByRole(UserRole.DRIVER, search.toLowerCase(), pg);
+        } else if (status != null) {
+            p = userRepository.findByRoleAndStatus(UserRole.DRIVER, status, pg);
+        } else {
+            p = userRepository.findByRole(UserRole.DRIVER, pg);
+        }
+        var content = p.getContent().stream().map(u -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", u.getId());
+            m.put("name", u.getName());
+            m.put("email", u.getEmail());
+            m.put("status", u.getStatus().name());
+            Driver drv = driverRepository.findByUser(u).orElse(null);
+            if (drv != null) {
+                m.put("vehicleType", drv.getVehicleType());
+                m.put("vehicleNumber", drv.getVehicleNumber());
+                m.put("phoneNumber", drv.getPhoneNumber());
+                m.put("licenseNumber", drv.getLicenseNumber());
+                m.put("nationalId", drv.getNationalId());
+            }
+            return m;
+        }).collect(Collectors.toList());
+        return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
+    }
+
+    public PageResponse<Map<String, Object>> listUsers(UserRole role, String search, Pageable pg) {
+        Page<User> p;
+        if (search != null && !search.isBlank()) {
+            p = userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, pg);
+        } else if (role != null) {
+            p = userRepository.findByRole(role, pg);
+        } else {
+            p = userRepository.findAll(pg);
+        }
+        var content = p.getContent().stream().map(u -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", u.getId());
+            m.put("name", u.getName());
+            m.put("email", u.getEmail());
+            m.put("role", u.getRole() != null ? u.getRole().name() : "NONE");
+            m.put("status", u.getStatus().name());
+            return m;
+        }).collect(Collectors.toList());
+        return new PageResponse<>(content, p.getNumber(), p.getSize(), p.getTotalElements(), p.getTotalPages());
+    }
+
+    public Map<String, Object> getStats() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("customers", userRepository.countByRole(UserRole.CUSTOMER));
+        m.put("drivers", userRepository.countByRole(UserRole.DRIVER));
+        m.put("owners", userRepository.countByRole(UserRole.RESTAURANT_OWNER));
+        m.put("restaurants", restaurantRepository.count());
+        m.put("pendingRestaurants", restaurantRepository.countByStatus(RestaurantStatus.PENDING));
+        m.put("pendingDrivers", userRepository.findByRoleAndStatus(UserRole.DRIVER, UserStatus.PENDING).size());
+        m.put("orders", orderRepository.count());
+        java.math.BigDecimal revenue = orderRepository.sumTotalByStatus(com.wagba.entity.enums.OrderStatus.DELIVERED);
+        m.put("revenue", revenue != null ? revenue : java.math.BigDecimal.ZERO);
+        return m;
     }
 
     /**

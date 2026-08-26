@@ -1,4 +1,4 @@
-package com.wagba.realtime;
+package com.wagba.dto.notification;
 
 public record RealtimeNotification(
         String type,

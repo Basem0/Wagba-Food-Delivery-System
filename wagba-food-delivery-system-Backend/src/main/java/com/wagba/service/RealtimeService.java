@@ -1,6 +1,6 @@
 package com.wagba.service;
 
-import com.wagba.realtime.RealtimeNotification;
+import com.wagba.dto.notification.RealtimeNotification;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 

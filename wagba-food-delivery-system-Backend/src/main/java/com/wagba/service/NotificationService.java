@@ -2,7 +2,7 @@ package com.wagba.service;
 
 import com.wagba.dto.notification.NotificationResponse;
 import com.wagba.entity.Notification;
-import com.wagba.realtime.RealtimeNotification;
+import com.wagba.dto.notification.RealtimeNotification;
 import com.wagba.repository.NotificationRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

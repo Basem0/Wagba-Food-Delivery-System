@@ -1,4 +1,4 @@
-package com.wagba.controller;
+package com.wagba.controller.customer;
 
 import com.wagba.dto.AddressRequest;
 import com.wagba.dto.order.AddressResponse;

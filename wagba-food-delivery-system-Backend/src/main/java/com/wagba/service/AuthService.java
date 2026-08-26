@@ -1,12 +1,17 @@
 package com.wagba.service;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.wagba.dto.auth.AuthResponse;
+import com.wagba.dto.auth.LoginRequest;
 import com.wagba.dto.auth.RegisterRequest;
+import com.wagba.dto.user.UserProfileRequest;
 import com.wagba.entity.User;
 import com.wagba.entity.enums.OnboardingStatus;
 import com.wagba.entity.enums.UserStatus;
@@ -14,6 +19,10 @@ import com.wagba.entity.enums.UserRole;
 import com.wagba.repository.UserRepository;
 import com.wagba.security.GoogleTokenVerifier;
 import com.wagba.security.JwtUtil;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import jakarta.transaction.Transactional;
 
@@ -27,6 +36,7 @@ public class AuthService {
 	private final EmailService emailService;
 	private final TokenBlacklistService tokenBlacklistService;
 	private final JwtUtil jwtUtil;
+	private final AuthenticationManager authenticationManager;
 
 	@Value("${google.client.id:}")
 	private String googleClientId;
@@ -36,15 +46,94 @@ public class AuthService {
 			PasswordEncoder passwordEncoder,
 			EmailService emailService,
 			TokenBlacklistService tokenBlacklistService,
-			JwtUtil jwtUtil)
+			JwtUtil jwtUtil,
+			AuthenticationManager authenticationManager)
 	{
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.emailService = emailService;
 		this.tokenBlacklistService = tokenBlacklistService;
 		this.jwtUtil = jwtUtil;
+		this.authenticationManager = authenticationManager;
 	}
-	
+
+	// ---------- User lookup methods ----------
+
+	public User findByEmail(String email) {
+		return userRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("User not found"));
+	}
+
+	public Map<String, Object> userPayload(User user) {
+		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("id", user.getId());
+		result.put("name", user.getName());
+		result.put("email", user.getEmail());
+		result.put("role", user.getRole() != null ? user.getRole().name() : null);
+		result.put("status", user.getStatus() != null ? user.getStatus().name() : null);
+		result.put("onboardingStatus", user.getOnboardingStatus() != null ? user.getOnboardingStatus().name() : null);
+		result.put("emailVerified", user.isEmailVerified());
+		result.put("phone", user.getPhone());
+		return result;
+	}
+
+	public Map<String, Object> getCurrentUser(String email) {
+		User user = findByEmail(email);
+		return userPayload(user);
+	}
+
+	@Transactional
+	public Map<String, Object> updateProfile(String email, UserProfileRequest request) {
+		User user = findByEmail(email);
+		if (request.getName() != null && !request.getName().isBlank()) user.setName(request.getName().trim());
+		if (request.getPhone() != null) user.setPhone(request.getPhone().trim());
+		userRepository.save(user);
+		return userPayload(user);
+	}
+
+	public AuthResponse login(LoginRequest request) {
+		Authentication authentication = authenticationManager.authenticate(
+				new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+
+		UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+		String role = userDetails.getAuthorities().iterator().next().getAuthority();
+
+		String token = jwtUtil.generateToken(userDetails.getUsername(), role);
+		User user = findByEmail(userDetails.getUsername());
+
+		return new AuthResponse(
+				token,
+				user.getId(),
+				user.getName(),
+				user.getEmail(),
+				user.getRole() != null ? user.getRole().name() : null,
+				user.getStatus() != null ? user.getStatus().name() : null,
+				user.getOnboardingStatus() != null ? user.getOnboardingStatus().name() : null
+		);
+	}
+
+	public AuthResponse googleLoginPayload(String idToken) {
+		String token = googleLogin(idToken);
+		User user = findByEmail(jwtUtil.extractEmail(token));
+		return new AuthResponse(
+				token,
+				user.getId(),
+				user.getName(),
+				user.getEmail(),
+				user.getRole() != null ? user.getRole().name() : null,
+				user.getStatus() != null ? user.getStatus().name() : null,
+				user.getOnboardingStatus() != null ? user.getOnboardingStatus().name() : null
+		);
+	}
+
+	@Transactional
+	public void selectRoleByEmail(String email, UserRole role) {
+		User user = findByEmail(email);
+		selectRole(user.getId(), role);
+	}
+
+	// ---------- Existing methods ----------
+
 	@Transactional
 	public void register(RegisterRequest request) {
 

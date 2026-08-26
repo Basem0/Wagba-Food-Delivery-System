@@ -30,7 +30,7 @@ import com.wagba.repository.RestaurantRepository;
 import com.wagba.repository.ReviewRepository;
 import com.wagba.repository.UserRepository;
 import com.wagba.dto.PageResponse;
-import com.wagba.realtime.RealtimeNotification;
+import com.wagba.dto.notification.RealtimeNotification;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -679,6 +679,56 @@ public class OrderService {
                 : orderRepository.findByStatus(status, pageable);
         Page<OrderResponse> op = p.map(this::toResponse);
         return new PageResponse<>(op.getContent(), op.getNumber(), op.getSize(), op.getTotalElements(), op.getTotalPages());
+    }
+
+    public com.wagba.dto.order.TrackingResponse tracking(String email, Long orderId) {
+        User customer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Order order = orderRepository.findByCustomerAndId(customer, orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        Delivery delivery = deliveryRepository.findByOrder(order).orElse(null);
+        com.wagba.dto.order.DriverTrackingInfo driverInfo = null;
+        if (delivery != null && delivery.getDriver() != null) {
+            User d = delivery.getDriver();
+            Driver drv = driverRepository.findByUser(d).orElse(null);
+            if (drv != null) {
+                driverInfo = new com.wagba.dto.order.DriverTrackingInfo(
+                        drv.getId(),
+                        d.getName(),
+                        drv.getPhoneNumber(),
+                        drv.getVehicleType(),
+                        drv.getVehicleNumber(),
+                        drv.getLatitude(),
+                        drv.getLongitude(),
+                        drv.getLocationUpdatedAt() != null ? drv.getLocationUpdatedAt().toString() : null
+                );
+            }
+        }
+
+        return new com.wagba.dto.order.TrackingResponse(
+                order.getId(),
+                order.getStatus().name(),
+                delivery != null ? delivery.getStatus().name() : null,
+                order.getRestaurant() != null ? order.getRestaurant().getName() : null,
+                driverInfo,
+                order.getCreatedAt() != null ? order.getCreatedAt().toString() : null,
+                order.getCustomerLatitude(),
+                order.getCustomerLongitude(),
+                order.getRestaurant() != null ? order.getRestaurant().getLatitude() : null,
+                order.getRestaurant() != null ? order.getRestaurant().getLongitude() : null
+        );
+    }
+
+    public Order requireOwnOrder(String email, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (!order.getCustomer().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Order does not belong to you");
+        }
+        return order;
     }
 
     public long countAll() {
