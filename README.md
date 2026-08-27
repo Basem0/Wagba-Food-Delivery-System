@@ -6,10 +6,7 @@ Wagba is a full-stack food-delivery platform that connects **customers**, **rest
 
 [Watch the Wagba demo](./Video.webm)
 
-
-
-
-
+Live Demo of Frontend: [Wagba Frontend demo](https://wagba-food-delivery-system.vercel.app)
 
 > **Want the detailed technical view?** Read the complete [System Design](system-design.md) for requirements, data model, service boundaries, order lifecycle, and API design.
 
